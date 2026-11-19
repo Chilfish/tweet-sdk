@@ -4,6 +4,8 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) an
 
 ## Unreleased
 
+## 0.2.1 — 2026-11-19
+
 ### Added
 
 - `UserData` (structural `IUser` model data) in `./internals`, alongside `UserDetails` (class) and the raw `IUser`, so persisted user JSON can be typed without assertions.
