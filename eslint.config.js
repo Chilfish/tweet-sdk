@@ -22,4 +22,11 @@ export default antfu(
       'node/prefer-global/buffer': 'off',
     },
   },
+  {
+    files: ['scripts/smoke-*.mjs'],
+    rules: {
+      // Smoke scripts intentionally import the built package, not `src/`.
+      'antfu/no-import-dist': 'off',
+    },
+  },
 )

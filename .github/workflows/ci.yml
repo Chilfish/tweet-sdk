@@ -53,6 +53,10 @@ jobs:
           test -f dist/cli.d.ts
           test -f dist/cli.d.cts
           test -f dist/cli-bin.js
+          test -f dist/internals.js
+          test -f dist/internals.cjs
+          test -f dist/internals.d.ts
+          test -f dist/internals.d.cts
 
       - name: Upload coverage
         uses: actions/upload-artifact@v7
@@ -101,10 +105,54 @@ jobs:
           node-version: ${{ matrix.node }}
 
       - name: Import ESM build
-        run: node --input-type=module -e "const m = await import('./dist/index.js'); if (typeof m.TwitterClient !== 'function' || !m.ResourceType) process.exit(1); const n = await import('./dist/node.js'); if (typeof n.createNodeClient !== 'function') process.exit(1); const c = await import('./dist/cli.js'); if (typeof c.main !== 'object') process.exit(1)"
+        run: node --input-type=module -e "const m = await import('./dist/index.js'); if (typeof m.TwitterClient !== 'function' || typeof m.TwitterAPIClient !== 'function' || typeof m.createClient !== 'function' || typeof m.PoolExhaustedError !== 'function' || !m.ResourceType) process.exit(1); const i = await import('./dist/internals.js'); if (typeof i.Extractors !== 'object' || typeof i.TwitterAPIClient !== 'function') process.exit(1); const n = await import('./dist/node.js'); if (typeof n.createNodeClient !== 'function') process.exit(1); const c = await import('./dist/cli.js'); if (typeof c.main !== 'object') process.exit(1)"
 
       - name: Import CJS build
-        run: node -e "const m = require('./dist/index.cjs'); if (typeof m.TwitterClient !== 'function' || !m.ResourceType) process.exit(1); const n = require('./dist/node.cjs'); if (typeof n.createNodeClient !== 'function') process.exit(1); const c = require('./dist/cli.cjs'); if (typeof c.main !== 'object') process.exit(1)"
+        run: node -e "const m = require('./dist/index.cjs'); if (typeof m.TwitterClient !== 'function' || typeof m.TwitterAPIClient !== 'function' || typeof m.createClient !== 'function' || typeof m.PoolExhaustedError !== 'function' || !m.ResourceType) process.exit(1); const i = require('./dist/internals.cjs'); if (typeof i.Extractors !== 'object' || typeof i.TwitterAPIClient !== 'function') process.exit(1); const n = require('./dist/node.cjs'); if (typeof n.createNodeClient !== 'function') process.exit(1); const c = require('./dist/cli.cjs'); if (typeof c.main !== 'object') process.exit(1)"
 
       - name: CLI smoke
         run: node dist/cli-bin.js --version
+
+  runtime-bun:
+    name: Runtime Bun
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+
+      - run: bun install --frozen-lockfile --ignore-scripts
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist
+
+      - name: Bun package smoke (mock HTTP + native proxy)
+        run: bun run smoke:bun
+
+  runtime-workers:
+    name: Runtime Workers
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+
+      - run: bun install --frozen-lockfile --ignore-scripts
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist
+
+      - name: workerd package smoke (Miniflare)
+        run: bun run smoke:workers
