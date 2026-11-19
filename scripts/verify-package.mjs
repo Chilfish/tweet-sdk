@@ -100,6 +100,7 @@ if (packInfo) {
     'package.json',
     'README.md',
     'LICENSE.md',
+    'NOTICE.md',
     'dist/index.js',
     'dist/index.cjs',
     'dist/index.d.ts',
