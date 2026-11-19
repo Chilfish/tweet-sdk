@@ -16,6 +16,7 @@
 |---|---|---|
 | [guide/getting-started.md](./guide/getting-started.md) | 安装、初始化、第一条命令 | 第一次接触本项目 |
 | [guide/usage.md](./guide/usage.md) | 日常开发、发布、常见操作 | 日常开发 |
+| [guide/cli.md](./guide/cli.md) | `tweet-cli` 命令、输出契约、认证 | 使用命令行时 |
 
 ## 工程规范
 

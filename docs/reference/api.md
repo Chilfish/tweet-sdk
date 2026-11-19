@@ -1,6 +1,6 @@
 # 公开 API
 
-`src/index.ts` 是唯一对外承诺的入口；`src/node.ts` 是 `./node` 子路径入口；`src/lib/**` 的内部路径不属于公开 API。
+`src/index.ts` 是 core 入口；`src/node.ts` 是 `./node` 子路径入口；`src/cli.ts` 是 `./cli` 入口；`src/cli-bin.ts` 是 bin（`tweet-cli`）。`src/lib/**` 的内部路径不属于公开 API。
 
 ## 入口
 
@@ -8,9 +8,11 @@
 |---|---|---|
 | `@chilfish/tweet` | `dist/index.js` / `dist/index.cjs` | 平台无关（fetch 即可） |
 | `@chilfish/tweet/node` | `dist/node.js` / `dist/node.cjs` | Node 20+（`node:fs`、undici dispatcher） |
+| `@chilfish/tweet/cli` | `dist/cli.js` / `dist/cli.cjs` | Node 20+（可嵌入命令树） |
+| `tweet-cli`（bin） | `dist/cli-bin.js` | Node 20+（`bunx` / `npx`） |
 | `@chilfish/tweet/react` | 待 Phase 3 | 浏览器 |
 
-两个入口的 ESM / CJS 公开面一致，类型声明分别为 `index.d.ts` / `index.d.cts`（`node.d.ts` / `node.d.cts`）。
+各入口的 ESM / CJS 公开面一致，类型声明分别为 `index.d.ts` / `index.d.cts`（`node.*`、`cli.*` 同理）。
 
 ## core 导出面
 
@@ -80,6 +82,18 @@
 | `createProxyFetch(proxy)` | 基于 undici `ProxyAgent` 的 `HttpClient`（`http(s)://`） |
 | `readMediaFile(path)` | 读文件为 `Blob`，供 `tweet.upload` 使用 |
 | `CreateNodeClientOptions` | `keys` / `cookie` / `proxy` / `timeout` / `maxRetries` / `headers` / `logger` |
+
+## cli 导出面
+
+| 导出 | 说明 |
+|---|---|
+| `main` | citty 命令树根（`tweet` / `user` / `space` / `list` / `media`） |
+| `withErrorEnvelope(command)` | 递归包装 `run`，统一输出 JSON 错误信封 |
+| `formatCliError(error)` | 错误 → `{ event, code, message, ... }` |
+| `assertKnownFlags(root, argv)` | 未知参数校验（含最接近候选提示） |
+| `showCliUsage(command, parent?)` | 按终端显示宽度对齐的帮助渲染 |
+
+bin `tweet-cli` 的行为与输出契约见 [cli.md](../guide/cli.md)。
 
 ## 契约
 

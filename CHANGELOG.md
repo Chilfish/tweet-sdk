@@ -6,7 +6,11 @@
 
 ### 新增
 
-- 包转型为 `@chilfish/tweet`：X 取数 + 推文富化 SDK，多入口单包（`.` core、`./node` Node 适配，`./react` 待 Phase 3）。
+- 新增 `tweet-cli`（`bin`）与 `./cli` 子路径：`tweet get/replies/search`、`user get/timeline`、`space get`、`list tweets`、`media download`。
+  CLI 基于 citty（构建时内联，零运行时依赖），默认 JSON 输出、`--format markdown` 人读视图、stderr JSON 错误信封。
+- CLI 在 `runMain` 前校验未知参数（含「最接近的候选」与「参数应写在子命令之后」提示）；`--help` 按终端显示宽度对齐（CJK 记 2 列）。
+- `media download` 以 NDJSON 事件（`item` / `done`）流式输出，支持并发、`--dry-run`、图片原图与最高码率 mp4。
+- 包转型为 `@chilfish/tweet`：X 取数 + 推文富化 SDK，多入口单包（`.` core、`./node` Node 适配、`./cli` 命令行，`./react` 待 Phase 3）。
 - 平台无关传输层：`HttpClient` / `HttpRequest` / `HttpResponse`，默认 `fetch` 实现，超时用 `AbortSignal.timeout`。
   `requests/*` 从 axios 配置改为中立请求描述符，`paramsSerializer` 由 `encodeQueryParams` 统一处理。
 - 类型化错误：`TwitterApiError` / `RateLimitError` / `AuthError` / `NotFoundError`，替换 `TwitterError` 与 `ErrorService`。

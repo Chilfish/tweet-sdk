@@ -26,7 +26,19 @@
     "import": { "types": "./dist/node.d.ts", "default": "./dist/node.js" },
     "require": { "types": "./dist/node.d.cts", "default": "./dist/node.cjs" }
   },
+  "./cli": {
+    "import": { "types": "./dist/cli.d.ts", "default": "./dist/cli.js" },
+    "require": { "types": "./dist/cli.d.cts", "default": "./dist/cli.cjs" }
+  },
   "./package.json": "./package.json"
+}
+```
+
+`bin` 指向 `./dist/cli-bin.js`（带 shebang，构建时自动加可执行权限）：
+
+```json
+{
+  "bin": { "tweet-cli": "./dist/cli-bin.js" }
 }
 ```
 
@@ -34,9 +46,9 @@
 
 - `types` 必须位于各自条件分支内、且在 `default` 之前。
 - 不允许裸字符串导出（例如 `".": "./dist/index.js"`）。
-- 每个目标文件必须真实存在，`bun run verify:package` 会校验。
+- 每个目标文件必须真实存在，`bun run verify:package` 会校验（含 `bin` 目标）。
 - 新增子路径时同步 `tests/exports.test.ts` 与 `tsdown.config.ts#entry`。
-- `./node` 是唯一允许引入 `node:*` 的入口；core 构建失败即视为破坏 `platform: 'neutral'`。
+- `./node` / `./cli` / `./cli-bin` 是允许引入 `node:*` 的入口；core 构建失败即视为破坏 `platform: 'neutral'`。
 
 ## 顶层兼容字段
 

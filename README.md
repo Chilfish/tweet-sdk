@@ -52,12 +52,43 @@ await client.run(fetcher => fetcher.request('MEDIA_UPLOAD_APPEND', {
 }))
 ```
 
+## 命令行
+
+```bash
+# 全局安装后使用 tweet-cli
+bun add -g @chilfish/tweet
+
+# 或直接运行
+bunx @chilfish/tweet tweet get 1968314084207788302 -f md
+npx @chilfish/tweet tweet search '#ゆめみた' --type latest
+```
+
+```text
+tweet-cli
+├── tweet get <id>                  单条推文（默认富化，--raw 输出原始）
+├── tweet replies <id>              回复 + nextCursor
+├── tweet search <query>            搜索（支持 from: / since: / min_faves: 等）
+├── user get <id|username>          用户资料
+├── user timeline <id>              用户时间线
+├── space get <id>                  Space 元数据
+├── list tweets <id>                列表推文
+└── media download <id> -o <dir>    下载图片原图 / 最高码率 mp4
+```
+
+- 认证：`--keys` / `--cookie` / `.env` 的 `TWEET_KEYS`；`--proxy` 或 `.env` 的 `http_proxy`。
+- 输出：查询默认 JSON，`--format markdown`（`-f md`）给人读；错误走 stderr 的 JSON 信封。
+- `media download` 以 NDJSON 事件（`item` / `done`）流式输出。
+
+详见 [docs/guide/cli.md](./docs/guide/cli.md)。
+
 ## 入口
 
 | 入口 | 内容 | 运行时 |
 |---|---|---|
 | `@chilfish/tweet` | transport / requests / auth / pool / parse / types | 平台无关 |
 | `@chilfish/tweet/node` | proxy dispatcher、`readMediaFile`、`createNodeClient` | Node 20+ |
+| `@chilfish/tweet/cli` | 可嵌入的 citty 命令树 | Node 20+ |
+| `tweet-cli`（bin） | 同上，供 `bunx` / `npx` / 全局安装 | Node 20+ |
 | `@chilfish/tweet/react` | 推文展示组件（Phase 3，尚未发布） | 浏览器 |
 
 ## 命令
@@ -73,6 +104,7 @@ await client.run(fetcher => fetcher.request('MEDIA_UPLOAD_APPEND', {
 | `bun run test:coverage` | 带 v8 覆盖率 |
 | `bun run check` | 全量门禁（类型 + lint + 测试 + 构建 + 产物校验） |
 | `bun run check:docs` | 文档链接与索引校验 |
+| `bun run cli` | 本地运行 CLI（`bun src/cli-bin.ts`） |
 | `bun run example` | 运行示例 |
 | `bun run verify:package` | 校验发布产物 |
 | `bun run release` | 升级版本、提交、打 tag、推送 |

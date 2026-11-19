@@ -4,11 +4,11 @@
 
 | 层 | 位置 | 依赖 | 内容 |
 |---|---|---|---|
-| 单元 | `tests/unit/` | 无 IO | 纯函数、解析、边界条件 |
-| 组件 | `tests/component/` | 注入的 fake | 模块间协作，替换外部依赖 |
-| 契约 | `tests/exports.test.ts` | 文件系统 | `package.json` 导出面、files、engines |
+| 单元 | `tests/http/`、`tests/pool/`、`tests/parse/`、`tests/cli/` | 无 IO | 纯函数、解析、传输替换、CLI 参数与规划 |
+| 契约 | `tests/exports.test.ts` | 文件系统 | `package.json` 导出面、files、engines、bin |
+| 集成 | `tests/integration/` | 真实 key | `describe.skipIf` 守卫，默认跳过 |
 
-目录镜像 `src/` 结构：`tests/unit/utils/id-codec.test.ts` 对应 `src/utils/id-codec.ts`。
+目录镜像 `src/` 结构：`tests/parse/poll.test.ts` 对应 `src/lib/parse/poll.ts`。
 
 ## 命名
 
@@ -19,8 +19,21 @@
 ## 工具
 
 - Vitest，`globals: true`，显式 import 也合法，但同仓保持一致。
-- 共享替身放在 `tests/testkit/`，各文件内的更强 fake 就地定义。
+- 共享替身与 fixture 加载器放在 `tests/helpers/`，各文件内的更强 fake 就地定义。
 - 用工厂函数构造被测对象，避免 `beforeEach` 共享可变状态。
+- 传输层测试注入 `createFetchHttpClient({ fetch })`，不访问网络；Pool 测试注入 `createFetcher`。
+
+## 集成用例
+
+`tests/integration/live.test.ts` 默认跳过，提供环境变量后运行：
+
+```bash
+TWEET_KEYS=<base64 cookie> TWEET_TEST_ID=<tweet-id> bun run test
+# 可选
+TWEET_TEST_SPACE_ID=<space-id> TWEET_TEST_USER=<username>
+```
+
+断言只覆盖契约形状（id / 字段存在性 / cursor 类型），不写死上游文案。
 
 ## 覆盖率
 
