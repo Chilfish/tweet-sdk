@@ -39,6 +39,7 @@ try {
     modules: true,
     scriptPath: outfile,
     compatibilityDate: '2025-01-01',
+    compatibilityFlags: ['nodejs_compat'],
   })
 
   const response = await mf.dispatchFetch('http://localhost/')
