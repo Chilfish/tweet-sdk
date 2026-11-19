@@ -7,14 +7,17 @@
  * on Node.
  */
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Miniflare } from 'miniflare'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
-const temp = mkdtempSync(join(tmpdir(), 'tweet-sdk-workers-'))
+// workerd refuses to load a module via `..` outside its starting directory on
+// Linux, so keep the generated bundle inside the repository.
+const tempRoot = join(root, 'temp')
+mkdirSync(tempRoot, { recursive: true })
+const temp = mkdtempSync(join(tempRoot, 'workers-'))
 const outfile = join(temp, 'worker.mjs')
 
 let mf
