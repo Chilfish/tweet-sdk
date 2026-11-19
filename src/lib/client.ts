@@ -24,6 +24,7 @@ export interface CursoredTweets {
 export interface ReplyOptions {
   sortBy?: TweetRepliesSortType
   cursor?: string
+  count?: number
 }
 
 export interface SearchOptions {
@@ -105,6 +106,7 @@ export class TwitterClient {
       const response = await fetcher.request<ITweetRepliesResponse>(ResourceType.TWEET_REPLIES, {
         id: tweetId,
         cursor: options.cursor,
+        count: options.count,
         sortBy: options.sortBy ?? TweetRepliesSortType.LIKES,
       })
 
