@@ -28,7 +28,13 @@ export type TwitterClientOptions = RettiwtPoolOptions
 
 /** Platform-neutral factory options (no environment access). */
 export type CreateClientOptions = TwitterClientOptions & {
-  /** Ready-to-use API keys (base64-encoded cookies). */
+  /**
+   * Ready-to-use API keys (base64-encoded cookies).
+   *
+   * A string is treated as a comma-separated list when it contains a comma
+   * (matching `createNodeClient` / `TWEET_KEYS`); a comma-free string is a
+   * single key.
+   */
   keys?: string[] | string
   /** Raw `k=v; k=v` cookie, encoded to an API key for you. */
   cookie?: string
@@ -260,7 +266,9 @@ export function createClient(options: CreateClientOptions = {}): TwitterClient {
     ? []
     : Array.isArray(keyInput)
       ? keyInput
-      : [keyInput]
+      : keyInput.includes(',')
+        ? keyInput.split(',').map(key => key.trim()).filter(Boolean)
+        : [keyInput]
 
   const keys = provided.length > 0
     ? provided

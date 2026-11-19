@@ -92,6 +92,16 @@ describe('twitterClient', () => {
     expect(createFetcher).toHaveBeenCalledWith('key-1')
   })
 
+  it('splits a comma-separated keys string', async () => {
+    const createFetcher = vi.fn(() => ({
+      request: vi.fn(),
+    } as unknown as FetcherService))
+    const client = createClient({ keys: 'key-1, key-2 ,,', createFetcher })
+
+    await client.run(async fetcher => fetcher)
+    expect(client.pool.status().map(status => status.keySuffix)).toEqual(['...key-1', '...key-2'])
+  })
+
   it('encodes a raw cookie into an api key', async () => {
     const createFetcher = vi.fn(() => ({
       request: vi.fn(),

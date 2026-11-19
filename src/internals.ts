@@ -14,11 +14,15 @@ export { Requests } from './lib/collections/Requests'
 // HELPERS + SERVICES
 export { findByFilter } from './lib/helper/JsonUtils'
 export { FetchArgs, TweetFilter } from './lib/models/args/FetchArgs'
-// MODELS
 export type { User as UserDetails } from './lib/models/data/User'
+export { ListRequests } from './lib/requests/List'
+export { MediaRequests } from './lib/requests/Media'
 export { SpaceRequests } from './lib/requests/Space'
 export { TweetRequests } from './lib/requests/Tweet'
+export { UserRequests } from './lib/requests/User'
 export { TwitterAPIClient } from './lib/services/public/TwitterAPIClient'
+// MODELS
+export type { IUser as UserData } from './lib/types/data/User'
 // RAW TYPES
 export type { IRawSpace } from './lib/types/raw/base/Space'
 

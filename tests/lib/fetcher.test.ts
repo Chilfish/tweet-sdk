@@ -100,6 +100,7 @@ describe('fetcherService', () => {
     const error = await fetcher.request(ResourceType.TWEET_REPLIES, { id: '1' }).catch(err => err)
 
     expect(error).toBeInstanceOf(NotSupportedError)
+    expect((error as NotSupportedError).status).toBe(403)
     expect((error as NotSupportedError).resource).toBe(ResourceType.TWEET_REPLIES)
     expect((error as Error).message).toBe('Not authorized to access requested resource')
   })

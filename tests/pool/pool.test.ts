@@ -1,6 +1,6 @@
 import type { FetcherService } from '../../src/lib/services/public/FetcherService'
 import { describe, expect, it, vi } from 'vitest'
-import { AuthError, PoolExhaustedError, RateLimitError, TwitterApiError } from '../../src/lib/errors'
+import { AuthError, NotSupportedError, PoolExhaustedError, RateLimitError, TwitterApiError } from '../../src/lib/errors'
 import { RettiwtPool } from '../../src/lib/pool'
 
 function fakeFetcher() {
@@ -61,12 +61,45 @@ describe('rettiwtPool', () => {
     await expect(run()).resolves.toBe('ok')
   })
 
-  it('does not retry non key-level errors', async () => {
+  it('does not retry non key-level 4xx errors', async () => {
     const { run, createFetcher } = makePool(['a', 'b'], [
-      new TwitterApiError('500', { status: 500 }),
+      new TwitterApiError('400', { status: 400 }),
     ])
-    await expect(run()).rejects.toThrow('500')
+    await expect(run()).rejects.toThrow('400')
     expect(createFetcher).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not retry or reclassify NotSupportedError', async () => {
+    const { run, createFetcher } = makePool(['a'], [
+      new NotSupportedError('missing credential'),
+    ])
+
+    const error = await run().catch((err: unknown) => err)
+    expect(error).toBeInstanceOf(NotSupportedError)
+    expect((error as NotSupportedError).status).toBe(403)
+    expect(createFetcher).toHaveBeenCalledTimes(1)
+  })
+
+  it('retries transient 408 / 425 / 5xx without cooling the key', async () => {
+    for (const status of [408, 425, 500, 503]) {
+      const logger = {
+        warn: vi.fn(),
+      }
+      const { run, createFetcher } = makePool(['a'], [
+        new TwitterApiError(`status ${status}`, { status }),
+        null,
+      ], {
+        backoffMs: 1_000,
+        cooldownMs: 10_000,
+        logger,
+      })
+
+      await expect(run()).resolves.toBe('ok')
+      expect(createFetcher).toHaveBeenCalledTimes(1)
+      expect(logger.warn).toHaveBeenCalledWith('pool.rotate', expect.objectContaining({
+        cooldownMs: 0,
+      }))
+    }
   })
 
   it('throws RateLimitError when every key is rate limited', async () => {
@@ -128,5 +161,36 @@ describe('rettiwtPool', () => {
     expect(logger.warn).toHaveBeenCalledWith('pool.rotate', expect.not.objectContaining({
       key: expect.anything(),
     }))
+  })
+
+  it('exposes per-key status after rotation', async () => {
+    const { pool, run } = makePool(['a', 'b'], [
+      new RateLimitError('429'),
+      null,
+    ], {
+      backoffMs: 1_000,
+      cooldownMs: 10_000,
+    })
+
+    await run()
+
+    const status = pool.status()
+    expect(status).toHaveLength(2)
+    expect(status.every(entry => entry.inFlight === 0)).toBe(true)
+
+    const failed = status.find(entry => entry.failStreak === 1)!
+    expect(failed).toBeDefined()
+    expect(failed.cooldownLeftMs).toBeGreaterThan(0)
+  })
+
+  it('reports NO_KEY for guest sessions', () => {
+    expect(new RettiwtPool([]).status()).toEqual([
+      {
+        keySuffix: 'NO_KEY',
+        cooldownLeftMs: 0,
+        failStreak: 0,
+        inFlight: 0,
+      },
+    ])
   })
 })

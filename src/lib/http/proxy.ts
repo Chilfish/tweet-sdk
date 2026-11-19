@@ -45,7 +45,8 @@ export function createProxyHttpClient(proxy: string): HttpClient {
     return createBunProxyHttpClient(proxy)
 
   throw new Error(
-    'The core entry only provides native proxy support on Bun. '
-    + 'On Node use `createProxyFetch` from `@chilfish/tweet/node`.',
+    'Native proxy support is only available on Bun. '
+    + 'On Node use `createProxyFetch` from `@chilfish/tweet/node`; '
+    + 'Workers, Deno and browsers have no native proxy option.',
   )
 }

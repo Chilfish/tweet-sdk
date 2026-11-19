@@ -61,10 +61,13 @@ export class NotFoundError extends TwitterApiError {
 /**
  * The resource requires a user credential, but only a guest session is
  * available (for example `TWEET_REPLIES` without `TWEET_KEYS`).
+ *
+ * Carries `status: 403` by default so consumers that map `error.status` do not
+ * fall back to 500 for a configuration problem.
  */
 export class NotSupportedError extends TwitterApiError {
   public constructor(message: string, options: TwitterApiErrorOptions = {}) {
-    super(message, options)
+    super(message, { ...options, status: options.status ?? 403 })
     this.name = 'NotSupportedError'
   }
 }

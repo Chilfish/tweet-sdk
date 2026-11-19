@@ -3,7 +3,7 @@ import type { HttpClient } from '../http/types'
 import type { Logger } from '../types/Logger'
 import type { TidProvider } from '../types/TidProvider'
 
-import { AuthError, PoolExhaustedError, RateLimitError } from '../errors'
+import { AuthError, NotSupportedError, PoolExhaustedError, RateLimitError } from '../errors'
 import { createProxyHttpClient } from '../http/proxy'
 import { RettiwtConfig } from '../models/RettiwtConfig'
 import { FetcherService } from '../services/public/FetcherService'
@@ -55,6 +55,15 @@ interface KeyState {
   inFlight: number
 }
 
+/** Per-key state exposed by {@link RettiwtPool.status}. */
+export interface PoolKeyStatus {
+  /** `...<last 6>` of the key, or `NO_KEY` for guest sessions. */
+  keySuffix: string
+  cooldownLeftMs: number
+  failStreak: number
+  inFlight: number
+}
+
 const NO_KEY = '__NO_API_KEY__'
 
 function errorStatus(error: unknown): number | undefined {
@@ -69,10 +78,25 @@ function errorStatus(error: unknown): number | undefined {
   return undefined
 }
 
-/** Default classifier: 429 (rate limit), 401 / 403 (rejected credential). */
+/**
+ * Default classifier:
+ * - 429 / 401 / 403: key-level failure; rotate and cool the key down
+ * - 408 / 425 / 5xx: transient upstream failure; retry without cooling the key
+ */
 const defaultClassifier: RetryClassifier = (error) => {
+  // A missing user credential is a configuration error, not a key-level failure:
+  // keep the original NotSupportedError instead of exhausting into AuthError.
+  if (error instanceof NotSupportedError)
+    return false
+
   const status = errorStatus(error)
-  return status === 429 || status === 401 || status === 403
+  if (status === undefined)
+    return false
+  if (status === 429 || status === 401 || status === 403)
+    return { retryable: true, cooldown: true }
+  if (status === 408 || status === 425 || (status >= 500 && status <= 599))
+    return { retryable: true, cooldown: false }
+  return false
 }
 
 function sleep(ms: number): Promise<void> {
@@ -264,6 +288,22 @@ export class RettiwtPool {
     return typeof decision === 'boolean'
       ? { retryable: decision, cooldown: decision }
       : decision
+  }
+
+  /** Snapshot of every key's cooldown / failure / in-flight state. */
+  public status(): PoolKeyStatus[] {
+    const now = Date.now()
+    return this.keys.map((key) => {
+      const state = this.getState(key)
+      return {
+        keySuffix: key
+          ? `...${key.slice(-6)}`
+          : 'NO_KEY',
+        cooldownLeftMs: Math.max(0, state.cooldownUntil - now),
+        failStreak: state.failStreak,
+        inFlight: state.inFlight,
+      }
+    })
   }
 
   private buildExhaustedError(attempt: number, lastError: unknown): TwitterApiError {

@@ -69,6 +69,7 @@ export {
 } from './lib/parse'
 export type { OrganizedTweets, ParseLogger, TranslationPayload } from './lib/parse'
 export type {
+  PoolKeyStatus,
   RetryClassifier,
   RetryDecision,
   RettiwtPoolLogger,
