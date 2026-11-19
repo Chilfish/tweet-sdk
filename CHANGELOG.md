@@ -4,6 +4,8 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) an
 
 ## Unreleased
 
+## 0.2.2 — 2026-11-19
+
 ### Fixed
 
 - `TweetRequests.details()` now sends `fieldToggles` with `withArticleRichContentState` and `withArticlePlainText`, so `TWEET_DETAILS` returns the X Article `content_state` / `plain_text` instead of falling back to the bare link.
