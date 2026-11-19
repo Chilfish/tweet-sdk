@@ -144,6 +144,10 @@ export class TweetRequests {
           responsive_web_graphql_timeline_navigation_enabled: true,
           responsive_web_enhance_cards_enabled: false,
         }),
+        fieldToggles: JSON.stringify({
+          withArticleRichContentState: true,
+          withArticlePlainText: true,
+        }),
 
       },
     }
@@ -470,7 +474,7 @@ export class TweetRequests {
         }),
         fieldToggles: JSON.stringify({
           withArticleRichContentState: true,
-          withArticlePlainText: false,
+          withArticlePlainText: true,
           withGrokAnalyze: false,
           withDisallowedReplyControls: false,
         }),
