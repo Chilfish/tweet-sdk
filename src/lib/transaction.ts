@@ -171,14 +171,73 @@ export async function fetchTransactionDocument(
     : new Error('Unable to fetch the X page shell required to generate the client transaction ID')
 }
 
-/** Default provider: scrapes the X shell and derives the transaction id. */
+/**
+ * Cached `ClientTransaction` instances.
+ *
+ * Building one requires fetching the X shell (up to five requests) and parsing
+ * ~1MB of HTML, so it must not happen per API call. The cache is keyed by the
+ * session cookie because the legacy shell is only served to an authenticated
+ * session; guest sessions share one entry.
+ */
+const TRANSACTION_TTL_MS = 10 * 60 * 1000
+const transactionCache = new Map<string, { transaction: ClientTransaction, at: number }>()
+const pendingTransactions = new Map<string, Promise<ClientTransaction>>()
+
+/** Clears the transaction cache (tests, or after a credential rotation). */
+export function resetTransactionCache(): void {
+  transactionCache.clear()
+  pendingTransactions.clear()
+}
+
+async function resolveTransaction(
+  client: HttpClient,
+  headers: Record<string, string>,
+  cookie?: string,
+): Promise<ClientTransaction> {
+  const key = cookie ?? ''
+  const cached = transactionCache.get(key)
+  if (cached && Date.now() - cached.at < TRANSACTION_TTL_MS)
+    return cached.transaction
+
+  let pending = pendingTransactions.get(key)
+  if (!pending) {
+    pending = (async () => {
+      const document = await fetchTransactionDocument(client, headers, cookie)
+      const transaction = await ClientTransaction.create(document)
+      transactionCache.set(key, {
+        transaction,
+        at: Date.now(),
+      })
+      return transaction
+    })().finally(() => pendingTransactions.delete(key))
+    pendingTransactions.set(key, pending)
+  }
+
+  return pending
+}
+
+/** Default provider: scrapes the X shell once, then reuses the transaction. */
 export const defaultTidProvider: TidProvider = {
   async getHeader({ method, url, cookie, headers, client }) {
-    const document = await fetchTransactionDocument(client, headers, cookie)
-    const transaction = await ClientTransaction.create(document)
     const path = new URL(url).pathname.split('?')[0]!.trim()
-    const tid = await transaction.generateTransactionId(method.toUpperCase(), path)
+    const upperMethod = method.toUpperCase()
 
-    return { 'x-client-transaction-id': tid }
+    try {
+      const transaction = await resolveTransaction(client, headers, cookie)
+      const tid = await transaction.generateTransactionId(upperMethod, path)
+      return { 'x-client-transaction-id': tid }
+    }
+    catch (error) {
+      // The cached shell may have gone stale (X shipped a new build): refetch once.
+      transactionCache.delete(cookie ?? '')
+      try {
+        const transaction = await resolveTransaction(client, headers, cookie)
+        const tid = await transaction.generateTransactionId(upperMethod, path)
+        return { 'x-client-transaction-id': tid }
+      }
+      catch {
+        throw error
+      }
+    }
   },
 }

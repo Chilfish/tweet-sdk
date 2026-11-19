@@ -124,12 +124,24 @@ export function createBodyError(
     return undefined
 
   const { code, message } = readErrorPayload(payload)
-  return new TwitterApiError(message ?? 'Twitter API error', {
-    status: code === 32
+  // X also signals auth/rate-limit problems inside a 200 body:
+  // 32 / 89 = invalid or expired credential, 88 = rate limit.
+  const status = code === 88
+    ? 429
+    : code === 32 || code === 89
       ? 401
-      : 200,
+      : 200
+  const text = message ?? 'Twitter API error'
+  const options: TwitterApiErrorOptions = {
+    status,
     code,
     resource,
     details: payload,
-  })
+  }
+
+  if (status === 429)
+    return new RateLimitError(text, options)
+  if (status === 401)
+    return new AuthError(text, options)
+  return new TwitterApiError(text, options)
 }

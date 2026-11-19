@@ -3,6 +3,7 @@ import type { RettiwtPoolLogger } from '../lib/pool'
 
 import { readFile } from 'node:fs/promises'
 import { TwitterClient } from '../lib/client'
+import { encodeBase64 } from '../lib/http/base64'
 import { createFetchHttpClient } from '../lib/http/fetch'
 
 /**
@@ -32,7 +33,15 @@ export function createProxyFetch(proxy: string): HttpClient {
   const getDispatcher = async (): Promise<unknown> => {
     if (!proxy.startsWith('http://') && !proxy.startsWith('https://'))
       throw new Error(`Unsupported proxy scheme for the fetch transport: ${proxy}. Use http:// or https://`)
-    dispatcherPromise ??= import('undici').then(({ ProxyAgent }) => new ProxyAgent(proxy))
+
+    dispatcherPromise ??= import('undici')
+      .then(({ ProxyAgent }) => new ProxyAgent(proxy))
+      .catch(() => {
+        throw new Error(
+          'Proxy support requires the optional peer dependency "undici". '
+          + 'Install it with `bun add undici` (or `npm i undici`).',
+        )
+      })
     return dispatcherPromise
   }
 
@@ -81,7 +90,7 @@ export function createNodeClient(options: CreateNodeClientOptions = {}): Twitter
     ? options.keys
     : options.cookie
       ? [
-          btoa(options.cookie),
+          encodeBase64(options.cookie),
         ]
       : readEnvKeys()
 

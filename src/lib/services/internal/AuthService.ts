@@ -12,6 +12,7 @@ import { AuthCredential } from '../../models/auth/AuthCredential'
  */
 export class AuthService {
   private readonly _config: RettiwtConfig
+  private _guestCredential?: { credential: AuthCredential, at: number }
 
   public constructor(config: RettiwtConfig) {
     this._config = config
@@ -151,8 +152,17 @@ export class AuthService {
     }
   }
 
-  /** Logs in as a guest and returns the resulting credential. */
+  /**
+   * Logs in as a guest and returns the resulting credential.
+   *
+   * Guest tokens are valid for a long time, so the credential is cached per
+   * fetcher instead of being re-issued on every request.
+   */
   public async guest(): Promise<AuthCredential> {
+    const cached = this._guestCredential
+    if (cached && Date.now() - cached.at < 10 * 60 * 1000)
+      return cached.credential
+
     const credential = new AuthCredential()
     const response = await this._config.httpClient.request<{ guest_token: string }>({
       url: 'https://api.twitter.com/1.1/guest/activate.json',
@@ -162,6 +172,10 @@ export class AuthService {
     })
 
     credential.guestToken = response.data.guest_token
+    this._guestCredential = {
+      credential,
+      at: Date.now(),
+    }
     return credential
   }
 }

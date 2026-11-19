@@ -38,7 +38,7 @@ export class FetcherService {
     this.config = config
     this._delay = config.delay
     this._errorHandler = config.errorHandler
-    this._timeout = config.timeout ?? 0
+    this._timeout = config.timeout
     this._auth = new AuthService(config)
   }
 

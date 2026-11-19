@@ -15,7 +15,10 @@ export interface IRettiwtConfig {
   /** The apiKey (base64-encoded cookie) used to authenticate against X. */
   apiKey?: string
 
-  /** The max wait time (in milliseconds) for a response. */
+  /**
+   * Per-request timeout in milliseconds. Defaults to 30000; use `0` to disable
+   * (required for long media uploads).
+   */
   timeout?: number
 
   /** Whether to write logs to the configured logger. */

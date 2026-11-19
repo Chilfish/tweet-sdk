@@ -24,6 +24,14 @@ const DefaultHeaders = {
 }
 
 /**
+ * The default per-request timeout (ms).
+ *
+ * `fetch` has no timeout by default, so a stalled upstream would hang forever.
+ * Set `timeout: 0` to disable it (for long media uploads).
+ */
+const DEFAULT_TIMEOUT = 30_000
+
+/**
  * Runtime configuration shared by the fetcher and the pool.
  *
  * @public
@@ -38,7 +46,7 @@ export class RettiwtConfig implements IRettiwtConfig {
   public readonly logging?: boolean
   public readonly maxRetries: number
   public readonly responseMiddleware?: (response: HttpResponse) => void | Promise<void>
-  public readonly timeout?: number
+  public readonly timeout: number
   public readonly httpClient: HttpClient
   public readonly tidProvider?: TidProvider
 
@@ -52,7 +60,7 @@ export class RettiwtConfig implements IRettiwtConfig {
     this.errorHandler = config?.errorHandler
     this.responseMiddleware = config?.responseMiddleware
     this.logging = config?.logging
-    this.timeout = config?.timeout
+    this.timeout = config?.timeout ?? DEFAULT_TIMEOUT
     this.httpClient = config?.httpClient ?? defaultHttpClient
     this.tidProvider = config?.tidProvider
     this._headers = {
