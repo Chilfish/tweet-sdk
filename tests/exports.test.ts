@@ -53,6 +53,13 @@ describe('package manifest', () => {
     })
   })
 
+  it('exposes the unstable internals entry as a typed subpath', () => {
+    expect(manifest.exports['./internals']).toEqual({
+      import: { types: './dist/internals.d.ts', default: './dist/internals.js' },
+      require: { types: './dist/internals.d.cts', default: './dist/internals.cjs' },
+    })
+  })
+
   it('ships a cli bin', () => {
     expect(manifest.bin).toEqual({ 'tweet-cli': './dist/cli-bin.js' })
   })

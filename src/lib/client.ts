@@ -1,4 +1,5 @@
 import type { User } from './models/data/User'
+import type { RettiwtPoolOptions } from './pool'
 import type { FetcherService } from './services/public/FetcherService'
 import type { ITweetFilter } from './types/args/FetchArgs'
 import type { RawTweet } from './types/enriched'
@@ -14,11 +15,23 @@ import { Extractors } from './collections/Extractors'
 import { ResourceType } from './enums/Resource'
 import { TweetRepliesSortType } from './enums/Tweet'
 import { findByFilter } from './helper/JsonUtils'
+import { encodeBase64 } from './http/base64'
 import { RettiwtPool } from './pool'
 
 export interface CursoredTweets {
   tweets: RawTweet[]
   nextCursor: string | null
+}
+
+/** Pool options accepted by {@link TwitterClient}; alias exported for consumers. */
+export type TwitterClientOptions = RettiwtPoolOptions
+
+/** Platform-neutral factory options (no environment access). */
+export type CreateClientOptions = TwitterClientOptions & {
+  /** Ready-to-use API keys (base64-encoded cookies). */
+  keys?: string[] | string
+  /** Raw `k=v; k=v` cookie, encoded to an API key for you. */
+  cookie?: string
 }
 
 export interface ReplyOptions {
@@ -232,4 +245,30 @@ export class TwitterClient {
   public run<T>(task: (fetcher: FetcherService) => Promise<T>): Promise<T> {
     return this.pool.run(task)
   }
+}
+
+/**
+ * Platform-neutral client factory.
+ *
+ * Unlike `createNodeClient`, it never reads `process.env`, so Workers / Bun /
+ * Deno / browser consumers can pass keys, a raw cookie or a proxy explicitly.
+ */
+export function createClient(options: CreateClientOptions = {}): TwitterClient {
+  const { keys: keyInput, cookie, ...poolOptions } = options
+
+  const provided = keyInput === undefined
+    ? []
+    : Array.isArray(keyInput)
+      ? keyInput
+      : [keyInput]
+
+  const keys = provided.length > 0
+    ? provided
+    : cookie
+      ? [
+          encodeBase64(cookie),
+        ]
+      : []
+
+  return new TwitterClient(keys, poolOptions)
 }

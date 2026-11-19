@@ -6,6 +6,7 @@ export default defineConfig({
     'src/node.ts',
     'src/cli.ts',
     'src/cli-bin.ts',
+    'src/internals.ts',
   ],
   format: ['esm', 'cjs'],
   dts: true,

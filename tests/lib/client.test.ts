@@ -1,7 +1,8 @@
 import type { FetcherService } from '../../src/lib/services/public/FetcherService'
 import { describe, expect, it, vi } from 'vitest'
-import { parseSearchTimeline, TwitterClient } from '../../src/lib/client'
+import { createClient, parseSearchTimeline, TwitterClient } from '../../src/lib/client'
 import { ResourceType } from '../../src/lib/enums/Resource'
+import { encodeBase64 } from '../../src/lib/http/base64'
 
 function fakeClient(request: (resource: ResourceType, args: unknown) => unknown) {
   const fetcher = {
@@ -81,6 +82,26 @@ describe('parseSearchTimeline', () => {
 })
 
 describe('twitterClient', () => {
+  it('creates a neutral client from a single key', async () => {
+    const createFetcher = vi.fn(() => ({
+      request: vi.fn(),
+    } as unknown as FetcherService))
+    const client = createClient({ keys: 'key-1', createFetcher })
+
+    await client.run(async fetcher => fetcher)
+    expect(createFetcher).toHaveBeenCalledWith('key-1')
+  })
+
+  it('encodes a raw cookie into an api key', async () => {
+    const createFetcher = vi.fn(() => ({
+      request: vi.fn(),
+    } as unknown as FetcherService))
+    const client = createClient({ cookie: 'auth_token=abc; twid=u%3D42;', createFetcher })
+
+    await client.run(async fetcher => fetcher)
+    expect(createFetcher).toHaveBeenCalledWith(encodeBase64('auth_token=abc; twid=u%3D42;'))
+  })
+
   it('returns the raw tweet result', async () => {
     const client = fakeClient(async () => ({
       data: {

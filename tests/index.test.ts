@@ -4,6 +4,8 @@ import * as api from '../src/index'
 describe('public api', () => {
   it('exposes the core client surface', () => {
     expect(typeof api.TwitterClient).toBe('function')
+    expect(typeof api.TwitterAPIClient).toBe('function')
+    expect(typeof api.createClient).toBe('function')
     expect(typeof api.RettiwtPool).toBe('function')
     expect(typeof api.FetcherService).toBe('function')
     expect(typeof api.RettiwtConfig).toBe('function')
@@ -14,7 +16,11 @@ describe('public api', () => {
     expect(new api.RateLimitError('x')).toBeInstanceOf(api.TwitterApiError)
     expect(new api.AuthError('x')).toBeInstanceOf(api.TwitterApiError)
     expect(new api.NotFoundError('x')).toBeInstanceOf(api.TwitterApiError)
+    expect(new api.NotSupportedError('x')).toBeInstanceOf(api.TwitterApiError)
+    expect(new api.PoolExhaustedError('x')).toBeInstanceOf(api.TwitterApiError)
     expect(new api.RateLimitError('x').status).toBe(429)
+    expect(new api.AuthError('x').status).toBe(401)
+    expect(new api.PoolExhaustedError('x').status).toBeUndefined()
   })
 
   it('exposes the parse layer', () => {

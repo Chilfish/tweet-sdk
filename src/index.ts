@@ -6,8 +6,8 @@
  */
 
 // CLIENT + POOL
-export type { CursoredTweets, ReplyOptions, SearchOptions } from './lib/client'
-export { parseSearchTimeline, TwitterClient } from './lib/client'
+export type { CreateClientOptions, CursoredTweets, ReplyOptions, SearchOptions, TwitterClientOptions } from './lib/client'
+export { createClient, parseSearchTimeline, TwitterClient } from './lib/client'
 // ENUMS
 export { BaseType } from './lib/enums/Data'
 export { ResourceType } from './lib/enums/Resource'
@@ -16,7 +16,14 @@ export { TweetRepliesSortType } from './lib/enums/Tweet'
 // ERRORS
 export type { TwitterApiErrorOptions } from './lib/errors'
 
-export { AuthError, NotFoundError, RateLimitError, TwitterApiError } from './lib/errors'
+export {
+  AuthError,
+  NotFoundError,
+  NotSupportedError,
+  PoolExhaustedError,
+  RateLimitError,
+  TwitterApiError,
+} from './lib/errors'
 // HTTP
 export type { HttpClient, HttpRequest, HttpResponse } from './lib/http'
 
@@ -60,7 +67,7 @@ export {
   restoreEntities,
   serializeForAI,
 } from './lib/parse'
-export type { OrganizedTweets, TranslationPayload } from './lib/parse'
+export type { OrganizedTweets, ParseLogger, TranslationPayload } from './lib/parse'
 export type {
   RetryClassifier,
   RetryDecision,
@@ -71,15 +78,16 @@ export { RettiwtPool } from './lib/pool'
 export { FetcherService } from './lib/services/public/FetcherService'
 
 export { TweetEnrichmentService } from './lib/services/public/TweetEnrichmentService'
-export type { TwitterAPIClient } from './lib/services/public/TwitterAPIClient'
+export { TwitterAPIClient } from './lib/services/public/TwitterAPIClient'
 export { buildXShellHeaders, isUsableXDocument, X_SHELL_URLS } from './lib/transaction'
 
 export type { ITweetFilter } from './lib/types/args/FetchArgs'
 
 export type { INewTweet, IUploadArgs } from './lib/types/args/PostArgs'
-
 // TYPES
 export type * from './lib/types/enriched'
+
+export type { Logger } from './lib/types/Logger'
 export type { IAudioSpace, IAudioSpaceByIdResponse } from './lib/types/raw/space/Details'
 export type { ITweetDetailsResponse } from './lib/types/raw/tweet/Details'
 export type { ITweetRepliesResponse } from './lib/types/raw/tweet/Replies'

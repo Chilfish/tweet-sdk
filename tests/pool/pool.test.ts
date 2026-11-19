@@ -1,6 +1,6 @@
 import type { FetcherService } from '../../src/lib/services/public/FetcherService'
 import { describe, expect, it, vi } from 'vitest'
-import { AuthError, RateLimitError, TwitterApiError } from '../../src/lib/errors'
+import { AuthError, PoolExhaustedError, RateLimitError, TwitterApiError } from '../../src/lib/errors'
 import { RettiwtPool } from '../../src/lib/pool'
 
 function fakeFetcher() {
@@ -88,6 +88,20 @@ describe('rettiwtPool', () => {
     expect((error as AuthError).status).toBe(403)
   })
 
+  it('does not classify a network failure as 401', async () => {
+    const error = await makePool(['a'], [
+      new Error('fetch failed'),
+    ], {
+      maxAttempts: 2,
+      shouldRetry: () => true,
+    }).run().catch((err: unknown) => err)
+
+    expect(error).toBeInstanceOf(PoolExhaustedError)
+    expect(error).toBeInstanceOf(TwitterApiError)
+    expect((error as PoolExhaustedError).status).toBeUndefined()
+    expect((error as Error).message).toContain('All keys exhausted')
+  })
+
   it('accepts a custom classifier', async () => {
     const shouldRetry = vi.fn(() => true)
     const { run } = makePool(['a', 'b'], [
@@ -108,7 +122,11 @@ describe('rettiwtPool', () => {
     ], { logger })
     await run()
     expect(logger.warn).toHaveBeenCalledWith('pool.rotate', expect.objectContaining({
+      keySuffix: expect.stringMatching(/^\.\.\./),
       reason: '429',
+    }))
+    expect(logger.warn).toHaveBeenCalledWith('pool.rotate', expect.not.objectContaining({
+      key: expect.anything(),
     }))
   })
 })

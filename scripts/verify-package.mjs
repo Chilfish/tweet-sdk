@@ -66,6 +66,10 @@ for (const file of [
   'dist/cli.d.ts',
   'dist/cli.d.cts',
   'dist/cli-bin.js',
+  'dist/internals.js',
+  'dist/internals.cjs',
+  'dist/internals.d.ts',
+  'dist/internals.d.cts',
 ]) {
   if (!existsSync(new URL(`../${file}`, import.meta.url)))
     fail(`missing build output: ${file}`)
@@ -125,6 +129,8 @@ if (packInfo) {
     'dist/cli.js',
     'dist/cli.cjs',
     'dist/cli-bin.js',
+    'dist/internals.js',
+    'dist/internals.cjs',
   ]
 
   for (const file of required) {

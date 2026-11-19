@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises'
 import { TwitterClient } from '../lib/client'
 import { encodeBase64 } from '../lib/http/base64'
 import { createFetchHttpClient } from '../lib/http/fetch'
+import { assertHttpProxy, createBunProxyHttpClient, isBunRuntime } from '../lib/http/proxy'
 
 /**
  * Node adapters.
@@ -24,16 +25,18 @@ export async function readMediaFile(path: string): Promise<Blob> {
 /**
  * Creates a fetch client that routes through an HTTP(S) proxy.
  *
- * Uses undici's `ProxyAgent` as the fetch dispatcher. SOCKS proxies are not
- * supported by the fetch transport; use an HTTP(S) proxy instead.
+ * Bun uses the native `fetch` proxy option; Node uses undici's `ProxyAgent`
+ * (lazily imported). SOCKS proxies are not supported by the fetch transport.
  */
 export function createProxyFetch(proxy: string): HttpClient {
+  assertHttpProxy(proxy)
+
+  if (isBunRuntime())
+    return createBunProxyHttpClient(proxy)
+
   let dispatcherPromise: Promise<unknown> | undefined
 
   const getDispatcher = async (): Promise<unknown> => {
-    if (!proxy.startsWith('http://') && !proxy.startsWith('https://'))
-      throw new Error(`Unsupported proxy scheme for the fetch transport: ${proxy}. Use http:// or https://`)
-
     dispatcherPromise ??= import('undici')
       .then(({ ProxyAgent }) => new ProxyAgent(proxy))
       .catch(() => {

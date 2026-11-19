@@ -1,8 +1,10 @@
 import type { TwitterApiError, TwitterApiErrorOptions } from '../errors'
 import type { HttpClient } from '../http/types'
+import type { Logger } from '../types/Logger'
 import type { TidProvider } from '../types/TidProvider'
 
-import { AuthError, RateLimitError } from '../errors'
+import { AuthError, PoolExhaustedError, RateLimitError } from '../errors'
+import { createProxyHttpClient } from '../http/proxy'
 import { RettiwtConfig } from '../models/RettiwtConfig'
 import { FetcherService } from '../services/public/FetcherService'
 
@@ -18,9 +20,7 @@ export interface RetryDecision {
 export type RetryClassifier = (error: unknown) => RetryDecision | boolean
 
 /** Minimal logger facade; keeps the pool free of `console` and app-specific logging. */
-export interface RettiwtPoolLogger {
-  warn?: (event: string, fields?: Record<string, unknown>) => void
-}
+export type RettiwtPoolLogger = Logger
 
 export interface RettiwtPoolOptions {
   /** Cooldown per key in ms (default 30s — the typical 429 window). */
@@ -34,9 +34,11 @@ export interface RettiwtPoolOptions {
   /** Injectable fetcher factory (tests, custom transports). */
   createFetcher?: (key?: string) => FetcherService
   /** Logger for rotation / exhaustion events. */
-  logger?: RettiwtPoolLogger
+  logger?: Logger
   /** Transport passed to the default fetcher factory. */
   httpClient?: HttpClient
+  /** HTTP(S) proxy; uses Bun's native fetch option when `httpClient` is absent (Node: use `createProxyFetch`). */
+  proxy?: string
   /** Transaction-id provider passed to the default fetcher factory. */
   tidProvider?: TidProvider
   /** Extra headers passed to the default fetcher factory. */
@@ -115,10 +117,15 @@ export class RettiwtPool {
 
     this.logger = options.logger
     this.factoryOptions = options
+    this.defaultHttpClient = options.httpClient
+      ?? (options.proxy
+        ? createProxyHttpClient(options.proxy)
+        : undefined)
   }
 
   private readonly logger?: RettiwtPoolLogger
   private readonly factoryOptions: RettiwtPoolOptions
+  private readonly defaultHttpClient?: HttpClient
 
   /**
    * Reserves a key, runs the task, and on key-level failures cools the key
@@ -163,7 +170,7 @@ export class RettiwtPool {
     }
 
     this.logger?.warn?.('pool.rotate', {
-      key: key
+      keySuffix: key
         ? `...${key.slice(-6)}`
         : 'NO_KEY',
       failStreak: state.failStreak,
@@ -241,7 +248,7 @@ export class RettiwtPool {
         ? this.options.createFetcher(key)
         : new FetcherService(new RettiwtConfig({
             apiKey: this.hasApiKeys ? key : undefined,
-            httpClient: this.factoryOptions.httpClient,
+            httpClient: this.defaultHttpClient,
             tidProvider: this.factoryOptions.tidProvider,
             headers: this.factoryOptions.headers,
             timeout: this.factoryOptions.timeout,
@@ -281,6 +288,8 @@ export class RettiwtPool {
 
     return options.status === 429
       ? new RateLimitError(text, options)
-      : new AuthError(text, { ...options, status: options.status ?? 401 })
+      : options.status === 401 || options.status === 403
+        ? new AuthError(text, options)
+        : new PoolExhaustedError(text, options)
   }
 }
