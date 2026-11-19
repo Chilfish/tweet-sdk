@@ -42,9 +42,25 @@ for (const file of [
   'dist/index.cjs',
   'dist/index.d.ts',
   'dist/index.d.cts',
+  'dist/node.js',
+  'dist/node.cjs',
+  'dist/node.d.ts',
+  'dist/node.d.cts',
+  'dist/cli.js',
+  'dist/cli.cjs',
+  'dist/cli.d.ts',
+  'dist/cli.d.cts',
+  'dist/cli-bin.js',
 ]) {
   if (!existsSync(new URL(`../${file}`, import.meta.url)))
     fail(`缺少构建产物: ${file}`)
+}
+
+for (const target of Object.values(pkg.bin ?? {})) {
+  if (typeof target !== 'string' || !target.startsWith('./'))
+    continue
+  if (!existsSync(new URL(`..${target.slice(1)}`, import.meta.url)))
+    fail(`bin 指向的文件不存在: ${target}`)
 }
 
 let packInfo
@@ -88,6 +104,9 @@ if (packInfo) {
     'dist/index.cjs',
     'dist/index.d.ts',
     'dist/index.d.cts',
+    'dist/cli.js',
+    'dist/cli.cjs',
+    'dist/cli-bin.js',
   ]
 
   for (const file of required) {
