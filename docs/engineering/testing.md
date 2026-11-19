@@ -6,8 +6,10 @@
 |---|---|---|---|
 | Unit | `tests/http/`, `tests/pool/`, `tests/parse/`, `tests/cli/` | no IO | pure functions, parsing, transport substitution, CLI arguments and planning |
 | Contract | `tests/exports.test.ts` | filesystem | `package.json` export surface, files, engines, bin |
-| Runtime smoke | `scripts/smoke-*.mjs` | built `dist/` | imports the package on Bun and workerd (Miniflare) and exercises the mock-HTTP path; runs after `build` in CI, not in Vitest |
+| Runtime smoke | `scripts/smoke-*.ts` | built `dist/` | imports the package on Bun and workerd (Miniflare) and exercises the mock-HTTP path; runs after `build` in CI, not in Vitest |
 | Integration | `tests/integration/` | real keys | guarded by `describe.skipIf`, skipped by default |
+
+All scripts are TypeScript and run with `bun scripts/<name>.ts` (`bun run check:docs`, `bun run verify:package`, `bun run smoke:bun`, …). `scripts/smoke-worker-entry.ts` is excluded from `tsc` because it imports the built `dist/index.js`; Bun's bundler resolves it when the worker smoke runs.
 
 The directory mirrors the `src/` structure: `tests/parse/poll.test.ts` corresponds to `src/lib/parse/poll.ts`.
 

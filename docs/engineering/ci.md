@@ -11,7 +11,7 @@ The pipeline is defined in `.github/workflows/ci.yml`.
 | `runtime-bun` | push to main / PR | imports the built package on Bun, runs the mock-HTTP smoke and proves a dead proxy is rejected |
 | `runtime-workers` | push to main / PR | bundles the built package with `bun build` and runs the smoke inside workerd through Miniflare |
 
-The runtime smoke scripts live in `scripts/`: `smoke-runtime.mjs` (shared mock-HTTP assertions), `smoke-bun.mjs` and `smoke-workers.mjs` (Miniflare driver). They import `dist/`, so they run after the build artifact is available.
+The runtime smoke scripts live in `scripts/`: `smoke-runtime.ts` (shared mock-HTTP assertions), `smoke-bun.ts` and `smoke-workers.ts` (Miniflare driver). They import `dist/`, so they run after the build artifact is available. All scripts are TypeScript and run through `bun scripts/<name>.ts`.
 
 ## Node versions
 

@@ -4,6 +4,11 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) an
 
 ## Unreleased
 
+### Changed
+
+- All `scripts/` are TypeScript and run through Bun (`bun scripts/*.ts`): `check-docs`, `verify-package`, `verify-release-tag` and the Bun/Workers smoke scripts.
+- `tsconfig.json` now type-checks `scripts/` (the `smoke-worker-entry.ts` bundler entry is excluded because it imports the built `dist/`).
+
 ## 0.2.1 — 2026-11-19
 
 ### Added
