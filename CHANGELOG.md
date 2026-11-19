@@ -4,6 +4,11 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) an
 
 ## Unreleased
 
+### Fixed
+
+- `TweetRequests.details()` now sends `fieldToggles` with `withArticleRichContentState` and `withArticlePlainText`, so `TWEET_DETAILS` returns the X Article `content_state` / `plain_text` instead of falling back to the bare link.
+- `TweetRequests.replies()` now also requests `withArticlePlainText`, matching its rich-content toggle.
+
 ### Changed
 
 - All `scripts/` are TypeScript and run through Bun (`bun scripts/*.ts`): `check-docs`, `verify-package`, `verify-release-tag` and the Bun/Workers smoke scripts.

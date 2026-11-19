@@ -134,6 +134,8 @@ Field naming conventions (since 0.1.0):
 
 `UserData` is the shape to use for cached/persisted user JSON (`User.toJSON()`); `UserDetails` is the live class type (includes `raw` / `toJSON`); `IUser` is the raw upstream response and is not the same object.
 
+`TweetRequests.details()` and `TweetRequests.replies()` send `withArticleRichContentState` and `withArticlePlainText`, so `article.article_results.result.content_state` / `plain_text` are available to `mapArticle()` from `TWEET_DETAILS` / `TWEET_REPLIES`.
+
 See [migration.md](../guide/migration.md) for the vendor-copy replacement recipe.
 
 ## node export surface

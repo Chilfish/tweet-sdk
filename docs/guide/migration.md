@@ -92,6 +92,12 @@ Card `title` / `description` are cleaned of zero-width placeholders
 (`\u200B-\u200D`, `\uFEFF`) and trimmed, so an official empty title falls back to the
 domain instead of rendering invisible text.
 
+`TweetRequests.details()` now requests the Article rich content state and plain
+text (`withArticleRichContentState` / `withArticlePlainText`), and `replies()`
+requests the plain fallback too. `mapArticle()` therefore sees
+`article.article_results.result.content_state` instead of falling back to the
+bare link.
+
 ## 4. Runtime factory and proxy
 
 `createClient` is platform-neutral and never reads `process.env`:
