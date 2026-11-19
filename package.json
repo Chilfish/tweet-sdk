@@ -1,7 +1,7 @@
 {
   "name": "@chilfish/tweet",
   "type": "module",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "packageManager": "bun@1.4.4",
   "description": "X (Twitter) data extraction + tweet enrichment SDK — platform-neutral core, Node adapters and React components.",
   "author": "Chilfish",
