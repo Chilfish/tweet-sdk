@@ -1,28 +1,20 @@
 /**
  * Runtime smoke shared by the Bun and Workers jobs.
  *
- * Imports the built package (not `src/`) and exercises the mock-HTTP path, so
- * a regression in the emitted bundle or a platform-only API is caught without
- * touching the network.
+ * The functions take the SDK module as an argument so the runners can inject
+ * either the built `dist` entry (Bun / workerd) while still type-checking
+ * against `src/index.ts`.
  */
-import {
-  attachSpaceDetails,
-  enrichTweet,
-  FetcherService,
-  NotSupportedError,
-  PoolExhaustedError,
-  ResourceType,
-  RettiwtConfig,
-  RettiwtPool,
-  TwitterAPIClient,
-} from '../dist/index.js'
+import type * as TweetSdk from '../src/index'
 
-function assert(condition, message) {
+export type SmokeSdk = typeof TweetSdk
+
+function assert(condition: unknown, message: string): asserts condition {
   if (!condition)
     throw new Error(`assertion failed: ${message}`)
 }
 
-function rawTweet(overrides = {}) {
+function rawTweet(overrides: Record<string, unknown> = {}): TweetSdk.RawTweet {
   return {
     __typename: 'Tweet',
     rest_id: '1900000000000000001',
@@ -64,10 +56,10 @@ function rawTweet(overrides = {}) {
     },
     views: { count: '6' },
     ...overrides,
-  }
+  } as unknown as TweetSdk.RawTweet
 }
 
-const userResponse = {
+const userResponse: unknown = {
   data: {
     user: {
       result: {
@@ -97,12 +89,12 @@ const userResponse = {
   },
 }
 
-export async function runSmoke() {
-  assert(typeof NotSupportedError === 'function', 'NotSupportedError export')
-  assert(typeof PoolExhaustedError === 'function', 'PoolExhaustedError export')
-  assert(typeof TwitterAPIClient === 'function', 'TwitterAPIClient runtime export')
+export async function runSmoke(sdk: SmokeSdk): Promise<void> {
+  assert(typeof sdk.NotSupportedError === 'function', 'NotSupportedError export')
+  assert(typeof sdk.PoolExhaustedError === 'function', 'PoolExhaustedError export')
+  assert(typeof sdk.TwitterAPIClient === 'function', 'TwitterAPIClient runtime export')
 
-  const enriched = enrichTweet(rawTweet())
+  const enriched = sdk.enrichTweet(rawTweet())
   assert(enriched, 'enrichTweet returns a tweet')
   assert(enriched.parent_id === '1900000000000000000', 'parent_id is populated')
   assert(enriched.replyCount === 2, 'replyCount is populated')
@@ -111,7 +103,7 @@ export async function runSmoke() {
   assert(enriched.viewCount === 6, 'viewCount is populated')
 
   const fetcher = {
-    async request(resource) {
+    async request(resource: string) {
       return resource === 'USER_DETAILS_BY_USERNAME'
         ? userResponse
         : {
@@ -122,11 +114,11 @@ export async function runSmoke() {
             },
           }
     },
-  }
-  const pool = new RettiwtPool([], {
+  } as unknown as TweetSdk.FetcherService
+  const pool = new sdk.RettiwtPool([], {
     createFetcher: () => fetcher,
   })
-  const api = new TwitterAPIClient(pool)
+  const api = new sdk.TwitterAPIClient(pool)
 
   const tweet = await api.fetchTweetRaw('1900000000000000001')
   assert(tweet.rest_id === '1900000000000000001', 'TwitterAPIClient.fetchTweetRaw')
@@ -145,8 +137,9 @@ export async function runSmoke() {
       ],
     },
   })
-  const spaceEnriched = enrichTweet(spaceRaw)
-  await attachSpaceDetails([spaceEnriched], [spaceRaw], async () => ({
+  const spaceEnriched = sdk.enrichTweet(spaceRaw)
+  assert(spaceEnriched, 'enrichTweet returns a Space tweet')
+  await sdk.attachSpaceDetails([spaceEnriched], [spaceRaw], async () => ({
     metadata: {
       title: 'Smoke Space',
       state: 'Running',
@@ -160,7 +153,7 @@ export async function runSmoke() {
         },
       },
     },
-  }))
+  }) as unknown as TweetSdk.IAudioSpace)
   assert(spaceEnriched.space?.id === 'space-1', 'attachSpaceDetails attaches metadata')
   assert(spaceEnriched.space?.availability === 'live', 'space availability is derived')
 }
@@ -174,7 +167,7 @@ ${[0, 1, 2, 3].map(index => `<div id="loading-x-anim-${index}"><div><div></div><
 
 const ONDEMAND_SOURCE = '(a[0],16) (b[1],16) (c[2],16) (d[3],16)'
 
-function mockResponse(data, url) {
+function mockResponse<T>(data: T, url: string): TweetSdk.HttpResponse<T> {
   return {
     status: 200,
     statusText: 'OK',
@@ -192,15 +185,15 @@ function mockResponse(data, url) {
  * chunk, so that one URL is intercepted locally; everything else goes through
  * the injected mock `HttpClient`.
  */
-export async function runDefaultTidSmoke() {
-  const requests = []
-  const mockClient = {
-    async request(request) {
+export async function runDefaultTidSmoke(sdk: SmokeSdk): Promise<void> {
+  const requests: TweetSdk.HttpRequest[] = []
+  const mockClient: TweetSdk.HttpClient = {
+    async request<T>(request: TweetSdk.HttpRequest): Promise<TweetSdk.HttpResponse<T>> {
       requests.push(request)
       const url = String(request.url)
 
       if (url.includes('guest/activate'))
-        return mockResponse({ guest_token: 'guest-token' }, url)
+        return mockResponse({ guest_token: 'guest-token' }, url) as TweetSdk.HttpResponse<T>
       if (url.includes('TweetResultByRestId')) {
         return mockResponse({
           data: {
@@ -212,17 +205,17 @@ export async function runDefaultTidSmoke() {
               },
             },
           },
-        }, url)
+        }, url) as TweetSdk.HttpResponse<T>
       }
       if (url.startsWith('https://x.com/'))
-        return mockResponse(X_SHELL_HTML, url)
+        return mockResponse(X_SHELL_HTML, url) as TweetSdk.HttpResponse<T>
 
       throw new Error(`unexpected request in default-tid smoke: ${url}`)
     },
   }
 
   const originalFetch = globalThis.fetch
-  globalThis.fetch = async (input, init) => {
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === 'string'
       ? input
       : input instanceof URL
@@ -235,15 +228,17 @@ export async function runDefaultTidSmoke() {
       })
     }
     return originalFetch(input, init)
-  }
+  }) as typeof fetch
 
   try {
-    const fetcher = new FetcherService(new RettiwtConfig({
+    const fetcher = new sdk.FetcherService(new sdk.RettiwtConfig({
       httpClient: mockClient,
       timeout: 5000,
     }))
 
-    const data = await fetcher.request(ResourceType.TWEET_DETAILS, { id: '1' })
+    const data = await fetcher.request<{
+      data: { tweetResult: { result: { rest_id: string } } }
+    }>(sdk.ResourceType.TWEET_DETAILS, { id: '1' })
     assert(data.data.tweetResult.result.rest_id === '1', 'default FetcherService.request')
 
     const shellRequest = requests.find(request => String(request.url) === 'https://x.com/home')

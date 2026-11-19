@@ -14,6 +14,6 @@
     "skipDefaultLibCheck": true,
     "skipLibCheck": true
   },
-  "include": ["src", "tests", "examples", "*.config.ts"],
-  "exclude": ["dist", "node_modules", "temp"]
+  "include": ["src", "tests", "examples", "scripts", "*.config.ts"],
+  "exclude": ["dist", "node_modules", "temp", "scripts/smoke-worker-entry.ts"]
 }

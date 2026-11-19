@@ -2,7 +2,7 @@
  * Verify the published artifacts:
  * - required dist files exist
  * - the packed tarball contains no source, tests, or config
- * - every file referenced by exports actually exists
+ * - every file referenced by exports exists
  *
  * `bun run build` must be run first.
  */
@@ -10,18 +10,31 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-const root = fileURLToPath(new URL('..', import.meta.url))
-const failures = []
+interface PackFile {
+  path: string
+}
 
-function fail(message) {
+interface PackInfo {
+  files: PackFile[]
+}
+
+interface PackageManifest {
+  exports?: unknown
+  bin?: Record<string, string>
+}
+
+const root = fileURLToPath(new URL('..', import.meta.url))
+const failures: string[] = []
+
+function fail(message: string): void {
   failures.push(message)
 }
 
-function collectTargets(value, targets = []) {
+function collectTargets(value: unknown, targets: string[] = []): string[] {
   if (typeof value === 'string') {
     targets.push(value)
   }
-  else if (value && typeof value === 'object') {
+  else if (typeof value === 'object' && value !== null) {
     for (const nested of Object.values(value))
       collectTargets(nested, targets)
   }
@@ -32,18 +45,18 @@ function collectTargets(value, targets = []) {
  * `npm pack --json` returns an array on npm 11 and an object keyed by package
  * name on npm 12. Accept both, and ignore any leading warning lines.
  */
-function parsePackOutput(output) {
+function parsePackOutput(output: string): PackInfo | undefined {
   const start = output.search(/[[{]/)
   if (start === -1)
     return undefined
 
-  const parsed = JSON.parse(output.slice(start))
+  const parsed: unknown = JSON.parse(output.slice(start))
   if (Array.isArray(parsed))
-    return parsed[0]
-  return Object.values(parsed)[0]
+    return parsed[0] as PackInfo
+  return Object.values(parsed as Record<string, PackInfo>)[0]
 }
 
-const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8'))
+const pkg: PackageManifest = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8'))
 
 for (const target of collectTargets(pkg.exports)) {
   if (!target.startsWith('./'))
@@ -76,13 +89,13 @@ for (const file of [
 }
 
 for (const target of Object.values(pkg.bin ?? {})) {
-  if (typeof target !== 'string' || !target.startsWith('./'))
+  if (!target.startsWith('./'))
     continue
   if (!existsSync(new URL(`..${target.slice(1)}`, import.meta.url)))
     fail(`file referenced by bin does not exist: ${target}`)
 }
 
-let packInfo
+let packInfo: PackInfo | undefined
 try {
   const packArgs = [
     'pack',
@@ -112,7 +125,10 @@ try {
     fail('could not parse the `npm pack --dry-run --json` output')
 }
 catch (error) {
-  fail(`npm pack --dry-run failed: ${error.message}`)
+  const message = error instanceof Error
+    ? error.message
+    : String(error)
+  fail(`npm pack --dry-run failed: ${message}`)
 }
 
 if (packInfo) {
@@ -151,4 +167,4 @@ if (failures.length > 0) {
   process.exit(1)
 }
 
-console.log(`verify-package passed (${packInfo.files.length} files)`)
+console.log(`verify-package passed (${packInfo?.files.length ?? 0} files)`)

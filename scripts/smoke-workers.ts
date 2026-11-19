@@ -1,7 +1,7 @@
 /**
  * Runs the runtime smoke inside workerd through Miniflare.
  *
- * `bun build` produces a single worker module from `smoke-worker-entry.mjs`
+ * `bun build` produces a single worker module from `smoke-worker-entry.ts`
  * (which imports the built `dist/index.js`); Miniflare then loads that bundle
  * so the test proves the package is importable and usable on Workers, not just
  * on Node.
@@ -20,11 +20,11 @@ mkdirSync(tempRoot, { recursive: true })
 const temp = mkdtempSync(join(tempRoot, 'workers-'))
 const outfile = join(temp, 'worker.mjs')
 
-let mf
+let mf: Miniflare | undefined
 try {
   execFileSync('bun', [
     'build',
-    join(root, 'scripts/smoke-worker-entry.mjs'),
+    join(root, 'scripts/smoke-worker-entry.ts'),
     '--outfile',
     outfile,
     '--target',

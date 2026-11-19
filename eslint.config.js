@@ -23,7 +23,7 @@ export default antfu(
     },
   },
   {
-    files: ['scripts/smoke-*.mjs'],
+    files: ['scripts/smoke-*.ts'],
     rules: {
       // Smoke scripts intentionally import the built package, not `src/`.
       'antfu/no-import-dist': 'off',
