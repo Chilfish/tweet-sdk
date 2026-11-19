@@ -1,9 +1,9 @@
 {
-  "name": "@chilfish/tweet-sdk",
+  "name": "@chilfish/tweet",
   "type": "module",
   "version": "0.0.0",
   "packageManager": "bun@1.4.4",
-  "description": "A modern TypeScript library scaffold with tsdown, Vitest, ESLint and release automation.",
+  "description": "X (Twitter) data extraction + tweet enrichment SDK — platform-neutral core, Node adapters and React components.",
   "author": "Chilfish",
   "license": "MIT",
   "homepage": "https://github.com/Chilfish/tweet-sdk#readme",
@@ -13,10 +13,11 @@
   },
   "bugs": "https://github.com/Chilfish/tweet-sdk/issues",
   "keywords": [
-    "typescript",
-    "starter",
-    "template",
-    "library"
+    "twitter",
+    "x",
+    "tweet",
+    "scraper",
+    "sdk"
   ],
   "sideEffects": false,
   "exports": {
@@ -30,6 +31,16 @@
         "default": "./dist/index.cjs"
       }
     },
+    "./node": {
+      "import": {
+        "types": "./dist/node.d.ts",
+        "default": "./dist/node.js"
+      },
+      "require": {
+        "types": "./dist/node.d.cts",
+        "default": "./dist/node.cjs"
+      }
+    },
     "./package.json": "./package.json"
   },
   "main": "./dist/index.cjs",
@@ -37,6 +48,7 @@
   "types": "./dist/index.d.ts",
   "files": [
     "LICENSE.md",
+    "NOTICE.md",
     "README.md",
     "dist"
   ],
@@ -61,10 +73,14 @@
     "example": "bun examples/basic.ts",
     "verify:package": "node scripts/verify-package.mjs",
     "verify:tag": "node scripts/verify-release-tag.mjs",
-    "start": "bun src/index.ts",
     "prepublishOnly": "bun run build",
     "release": "bumpp --commit \"chore(release): v{version}\" --tag --push",
     "prepare": "lefthook install"
+  },
+  "dependencies": {
+    "linkedom": "^0.18.15",
+    "undici": "^8.12.4",
+    "x-client-transaction-id": "^0.3.3"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^10.0.0",
