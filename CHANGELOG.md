@@ -4,6 +4,17 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) an
 
 ## Unreleased
 
+## 0.1.1 — 2026-11-19
+
+### Fixed
+
+- Manual `npm publish` no longer aborts with `EUSAGE` provenance errors: `publishConfig.provenance` was removed and the CI workflow passes `--provenance` explicitly.
+- The CI `runtime` job now installs production dependencies before importing `dist`, so externalized runtime deps (`linkedom`, `x-client-transaction-id`) resolve on every Node version.
+
+### Internal
+
+- First release published through the npm Trusted Publisher (OIDC) workflow, validating the repository binding.
+
 ## 0.1.0 — 2026-11-19
 
 ### Added
@@ -49,7 +60,5 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) an
 
 ### Fixed
 
-- Manual `npm publish` no longer aborts with `EUSAGE` provenance errors: `publishConfig.provenance` was removed and the CI workflow passes `--provenance` explicitly.
-- The CI `runtime` job now installs production dependencies before importing `dist`, so externalized runtime deps (`linkedom`, `x-client-transaction-id`) resolve on every Node version.
 - The Node 20 job in CI no longer runs the build (tsdown requires Node ≥22); it now consumes the `dist` artifact to verify the runtime.
 - Dependabot ignores `typescript >=7`, which `typescript-eslint` does not support yet.
