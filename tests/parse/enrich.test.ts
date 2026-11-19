@@ -72,7 +72,30 @@ describe('enrichTweet', () => {
     expect(tweet.url).toBe('https://twitter.com/tester/status/1900000000000000001')
     expect(tweet.user).toMatchObject({ id: '42', screen_name: 'tester', is_blue_verified: true })
     expect(tweet.in_reply_to_status_id_str).toBe('1900000000000000000')
+    expect(tweet.parent_id).toBe('1900000000000000000')
+    expect(tweet.replyCount).toBe(1)
+    expect(tweet.likeCount).toBe(2)
+    expect(tweet.retweetCount).toBe(4)
+    expect(tweet.viewCount).toBe(5)
     expect(tweet.isInlineMedia).toBe(false)
+  })
+
+  it('defaults the counters when upstream omits them', () => {
+    const lean = rawTweet({
+      legacy: {
+        ...(rawTweet().legacy as unknown as Record<string, unknown>),
+        reply_count: undefined,
+        favorite_count: undefined,
+        retweet_count: undefined,
+      },
+      views: undefined,
+    })
+
+    const tweet = enrichTweet(lean)!
+    expect(tweet.replyCount).toBe(0)
+    expect(tweet.likeCount).toBe(0)
+    expect(tweet.retweetCount).toBe(0)
+    expect(tweet.viewCount).toBe(0)
   })
 
   it('normalizes the profile image and strips the size suffix', () => {

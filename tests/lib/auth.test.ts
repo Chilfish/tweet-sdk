@@ -1,5 +1,6 @@
 import type { HttpClient, HttpResponse } from '../../src/lib/http/types'
 import { describe, expect, it, vi } from 'vitest'
+import { AuthError } from '../../src/lib/errors'
 import { decodeBase64, encodeBase64 } from '../../src/lib/http/base64'
 import { RettiwtConfig } from '../../src/lib/models/RettiwtConfig'
 import { AuthService } from '../../src/lib/services/internal/AuthService'
@@ -25,6 +26,7 @@ describe('authService', () => {
 
   it('extracts the user id from the cookie', () => {
     expect(AuthService.getUserId(API_KEY)).toBe('42')
+    expect(() => AuthService.getUserId(encodeBase64('auth_token=abc'))).toThrow(AuthError)
     expect(() => AuthService.getUserId(encodeBase64('auth_token=abc'))).toThrow('Invalid authentication data')
   })
 

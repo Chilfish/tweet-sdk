@@ -58,6 +58,31 @@ export class NotFoundError extends TwitterApiError {
   }
 }
 
+/**
+ * The resource requires a user credential, but only a guest session is
+ * available (for example `TWEET_REPLIES` without `TWEET_KEYS`).
+ */
+export class NotSupportedError extends TwitterApiError {
+  public constructor(message: string, options: TwitterApiErrorOptions = {}) {
+    super(message, options)
+    this.name = 'NotSupportedError'
+  }
+}
+
+/**
+ * Every retry attempt was consumed without a successful response.
+ *
+ * The upstream `status` is preserved when the last failure carried one; a
+ * network / parse failure therefore stays `undefined` instead of being
+ * fabricated as 401.
+ */
+export class PoolExhaustedError extends TwitterApiError {
+  public constructor(message: string, options: TwitterApiErrorOptions = {}) {
+    super(message, options)
+    this.name = 'PoolExhaustedError'
+  }
+}
+
 interface ErrorPayload {
   errors?: Array<{ code?: number, message?: string }>
   data?: unknown

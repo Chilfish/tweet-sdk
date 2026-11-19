@@ -6,6 +6,7 @@ import type {
   RawTweet,
   TweetUser,
 } from '../types/enriched'
+import type { Logger } from '../types/Logger'
 import { base64ToBytes } from '../http/base64'
 import { normalizeProfileImageUrl } from '../media-url'
 import { mapArticle } from './article'
@@ -16,9 +17,7 @@ import { mapPollCard } from './poll'
 /**
  * Enriches a tweet with additional data used to more easily use the tweet in a UI.
  */
-export interface ParseLogger {
-  warn?: (event: string, fields?: Record<string, unknown>) => void
-}
+export type ParseLogger = Logger
 
 export function enrichTweet(sourceData: RawTweet, retweetedOriginalId?: string, logger?: ParseLogger): EnrichedTweet | null {
   if (!sourceData || sourceData?.__typename === 'TweetTombstone')
@@ -53,6 +52,7 @@ export function enrichTweet(sourceData: RawTweet, retweetedOriginalId?: string, 
     user,
     in_reply_to_status_id_str: tweet.legacy.in_reply_to_status_id_str,
     in_reply_to_screen_name: (tweet.legacy as any).in_reply_to_screen_name,
+    parent_id: tweet.legacy.in_reply_to_status_id_str,
     entities,
     quotedTweetId: tweet.quoted_status_result?.result?.rest_id,
     card: mapTwitterCard(tweet.card, (tweet as any).jetfuel_attachment, logger),
@@ -61,6 +61,10 @@ export function enrichTweet(sourceData: RawTweet, retweetedOriginalId?: string, 
     mediaDetails: mapMediaDetails(tweet),
     retweetedOriginalId,
     isInlineMedia: !!tweet.note_tweet?.note_tweet_results?.result?.media?.inline_media?.length,
+    replyCount: tweet.legacy.reply_count ?? 0,
+    likeCount: tweet.legacy.favorite_count ?? 0,
+    retweetCount: tweet.legacy.retweet_count ?? 0,
+    viewCount: Number(tweet.views?.count) || 0,
     // photos: mapPhotoEntities(tweet),
     // video: mapVideoEntities(tweet),
     // parent: parentTweet(tweet),
@@ -437,8 +441,8 @@ export function mapTwitterCard(
       ? 'summary_large_image'
       : name, // Player cards are uniformly treated as large image cards
     url: legacy.url || getStr(bindings, 'card_url') || '',
-    title: getStr(bindings, 'title') ?? '',
-    description: getStr(bindings, 'description') ?? '',
+    title: cleanCardText(getStr(bindings, 'title')) ?? '',
+    description: cleanCardText(getStr(bindings, 'description')) ?? '',
     // Domain prefers the vanity_url used for official display (youtube.com); domain carries a www prefix
     domain: getStr(bindings, 'vanity_url') || getStr(bindings, 'domain') || '',
     imageUrl: getBestImage(bindings) ?? '',

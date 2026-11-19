@@ -2,7 +2,7 @@ import type { HttpClient, HttpResponse } from '../../src/lib/http/types'
 import type { TidProvider } from '../../src/lib/types/TidProvider'
 import { describe, expect, it, vi } from 'vitest'
 import { ResourceType } from '../../src/lib/enums/Resource'
-import { AuthError, RateLimitError } from '../../src/lib/errors'
+import { AuthError, NotSupportedError, RateLimitError } from '../../src/lib/errors'
 import { encodeBase64 } from '../../src/lib/http/base64'
 import { RettiwtConfig } from '../../src/lib/models/RettiwtConfig'
 import { FetcherService } from '../../src/lib/services/public/FetcherService'
@@ -87,6 +87,21 @@ describe('fetcherService', () => {
 
     expect(error).toBeInstanceOf(RateLimitError)
     expect((error as RateLimitError).status).toBe(429)
+  })
+
+  it('throws NotSupportedError when a resource needs a user credential', async () => {
+    const fetcher = new FetcherService(new RettiwtConfig({
+      httpClient: {
+        request: vi.fn() as unknown as HttpClient['request'],
+      },
+      tidProvider,
+    }))
+
+    const error = await fetcher.request(ResourceType.TWEET_REPLIES, { id: '1' }).catch(err => err)
+
+    expect(error).toBeInstanceOf(NotSupportedError)
+    expect((error as NotSupportedError).resource).toBe(ResourceType.TWEET_REPLIES)
+    expect((error as Error).message).toBe('Not authorized to access requested resource')
   })
 
   it('maps an auth error embedded in a 200 body to AuthError', async () => {

@@ -9,7 +9,7 @@ import { AllowGuestAuthenticationGroup, FetchResourcesGroup, PostResourcesGroup 
 import { Requests } from '../../collections/Requests'
 import { ApiErrors } from '../../enums/Api'
 import { LogActions } from '../../enums/Logging'
-import { createBodyError, createHttpError } from '../../errors'
+import { createBodyError, createHttpError, NotSupportedError } from '../../errors'
 import { FetchArgs } from '../../models/args/FetchArgs'
 import { PostArgs } from '../../models/args/PostArgs'
 import { AuthCredential } from '../../models/auth/AuthCredential'
@@ -47,7 +47,7 @@ export class FetcherService {
     LogService.log(LogActions.AUTHORIZATION, { authenticated: this.config.userId !== undefined })
 
     if (!AllowGuestAuthenticationGroup.includes(resource) && this.config.userId === undefined)
-      throw new Error(ApiErrors.RESOURCE_NOT_ALLOWED)
+      throw new NotSupportedError(ApiErrors.RESOURCE_NOT_ALLOWED, { resource })
   }
 
   /** Builds the credential for the current config (user cookie or guest token). */

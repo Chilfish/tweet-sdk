@@ -1,4 +1,5 @@
 import type { EnrichedTweet, RawTweet, SpaceAvailability, SpaceDetails, SpaceHost, TweetUser } from '../types/enriched'
+import type { Logger } from '../types/Logger'
 import type { IAudioSpace, ISpaceDetailsResponse } from '../types/raw/space/Details'
 import { formatDate } from './date'
 
@@ -342,7 +343,7 @@ export async function attachSpaceDetails(
   enrichedTweets: EnrichedTweet[],
   rawTweets: RawTweet[],
   fetchSpace: (spaceId: string) => Promise<IAudioSpace | null>,
-  logger?: { warn?: (event: string, fields?: Record<string, unknown>) => void },
+  logger?: Logger,
 ): Promise<void> {
   if (enrichedTweets.length === 0 || rawTweets.length === 0)
     return

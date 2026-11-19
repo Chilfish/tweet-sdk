@@ -18,6 +18,28 @@ function unifiedCard(payload: Record<string, unknown>) {
 }
 
 describe('mapTwitterCard · unified card media', () => {
+  it('cleans zero-width title and description placeholders on plain cards', () => {
+    const card = mapTwitterCard({
+      legacy: {
+        name: 'summary_large_image',
+        url: 'https://example.com',
+        binding_values: [
+          {
+            key: 'title',
+            value: { string_value: '\u200B' },
+          },
+          {
+            key: 'description',
+            value: { string_value: '  \u200B Hello \uFEFF ' },
+          },
+        ],
+      },
+    })
+
+    expect(card?.title).toBe('')
+    expect(card?.description).toBe('Hello')
+  })
+
   it('keeps carousel order, per-image hrefs, color and CTA', () => {
     const card = mapTwitterCard(unifiedCard({
       type: 'image_carousel_website',

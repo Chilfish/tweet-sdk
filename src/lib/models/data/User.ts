@@ -3,6 +3,7 @@ import type { IUser as IRawUser } from '../../types/raw/base/User'
 import type { ITimelineUser as IRawTimelineUser } from '../../types/raw/composite/TimelineUser'
 import { LogActions } from '../../enums/Logging'
 import { findByFilter } from '../../helper/JsonUtils'
+import { normalizeProfileImageUrl } from '../../media-url'
 import { LogService } from '../../services/internal/LogService'
 
 /**
@@ -51,7 +52,9 @@ export class User implements IUser {
     this.location = user.location?.location ?? user.legacy.location ?? undefined
     this.pinnedTweets = user.legacy.pinned_tweet_ids_str ?? []
     this.profileBanner = user.legacy.profile_banner_url
-    this.profileImage = user.avatar?.image_url ?? user.legacy.profile_image_url_https ?? ''
+    this.profileImage = normalizeProfileImageUrl(
+      user.avatar?.image_url ?? user.legacy.profile_image_url_https ?? '',
+    )
   }
 
   /** The raw user details. */

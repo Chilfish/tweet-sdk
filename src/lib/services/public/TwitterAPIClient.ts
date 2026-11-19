@@ -101,9 +101,6 @@ export class TwitterAPIClient {
       await this.onFetchedresponse(`${ResourceType.USER_DETAILS_BY_ID}-${id}`, response)
       const data = Extractors[resource](response) as unknown as EnrichedUser
 
-      if (data?.profileImage) {
-        data.profileImage = data.profileImage.replace('_normal', '')
-      }
       return data || null
     })
   }

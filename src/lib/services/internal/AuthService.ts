@@ -2,6 +2,7 @@ import type { HttpResponse } from '../../http/types'
 import type { RettiwtConfig } from '../../models/RettiwtConfig'
 
 import { ApiErrors } from '../../enums/Api'
+import { AuthError } from '../../errors'
 import { decodeBase64, encodeBase64 } from '../../http/base64'
 import { AuthCredential } from '../../models/auth/AuthCredential'
 
@@ -120,7 +121,7 @@ export class AuthService {
     if (searchResults)
       return searchResults[0]
 
-    throw new Error(ApiErrors.BAD_AUTHENTICATION)
+    throw new AuthError(ApiErrors.BAD_AUTHENTICATION)
   }
 
   /**
