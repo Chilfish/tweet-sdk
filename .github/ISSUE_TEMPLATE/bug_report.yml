@@ -1,0 +1,47 @@
+name: Bug 报告
+description: 报告可复现的缺陷
+title: 'bug: '
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        提交前请确认：已搜索现有 issue、已阅读 docs/README.md、已尝试最新版本。
+        安全问题请走 SECURITY.md，不要在这里公开。
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为
+      description: 你期望发生什么？
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为
+      description: 实际发生了什么？请附完整报错信息。
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 最小复现
+      description: 步骤、代码或最小仓库链接。
+      render: ts
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: 版本
+      description: 包版本或 commit hash。
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: 环境
+      description: 操作系统、Node 版本、包管理器及版本。
+    validations:
+      required: true

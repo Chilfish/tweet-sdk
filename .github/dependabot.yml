@@ -1,0 +1,24 @@
+version: 2
+
+updates:
+  - package-ecosystem: bun
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    ignore:
+      # typescript-eslint 尚不支持 TS 7，等其发布支持后再放开。
+      - dependency-name: typescript
+        versions: ['>=7']
+    groups:
+      dev-dependencies:
+        patterns:
+          - '*'
+        dependency-type: development
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday

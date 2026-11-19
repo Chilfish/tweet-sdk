@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Lint / Typecheck / Test / Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - run: bun install --frozen-lockfile
+
+      - run: bun run typecheck
+      - run: bun run lint:check
+      - run: bun run test:coverage
+      - run: bun run build
+      - run: bun run verify:package
+      - run: bun run check:docs
+      - run: bun run example
+
+      - name: Verify build output
+        run: |
+          test -f dist/index.js
+          test -f dist/index.cjs
+          test -f dist/index.d.ts
+          test -f dist/index.d.cts
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 7
+
+      - name: Upload dist
+        uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
+
+  runtime:
+    name: Runtime Node ${{ matrix.node }}
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        # 20 是 engines.node 的下限；构建工具要求 Node >=22，因此这里只验证
+        # 已构建产物在目标 Node 上可正常导入。
+        node: [20, 22, 24]
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Import ESM build
+        run: node --input-type=module -e "const m = await import('./dist/index.js'); if (typeof m.one !== 'number') process.exit(1)"
+
+      - name: Import CJS build
+        run: node -e "const m = require('./dist/index.cjs'); if (typeof m.one !== 'number') process.exit(1)"
