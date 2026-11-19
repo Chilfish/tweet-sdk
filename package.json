@@ -1,7 +1,7 @@
 {
   "name": "@chilfish/tweet",
   "type": "module",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "packageManager": "bun@1.4.4",
   "description": "X (Twitter) data extraction + tweet enrichment SDK — platform-neutral core, Node adapters and React components.",
   "author": "Chilfish",
@@ -91,9 +91,16 @@
     "release": "bumpp --commit \"chore(release): v{version}\" --tag --push",
     "prepare": "lefthook install"
   },
+  "peerDependencies": {
+    "undici": "^8.12.4"
+  },
+  "peerDependenciesMeta": {
+    "undici": {
+      "optional": true
+    }
+  },
   "dependencies": {
     "linkedom": "^0.18.15",
-    "undici": "^8.12.4",
     "x-client-transaction-id": "^0.3.3"
   },
   "devDependencies": {
@@ -108,6 +115,7 @@
     "lefthook": "^2.2.2",
     "tsdown": "^0.23.7",
     "typescript": "6.0.3",
+    "undici": "^8.12.4",
     "vitest": "^5.1.1"
   }
 }

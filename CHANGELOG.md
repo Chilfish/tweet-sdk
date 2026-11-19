@@ -1,47 +1,53 @@
 # Changelog
 
-本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
+This project follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [SemVer](https://semver.org/).
 
 ## Unreleased
 
-### 新增
+## 0.1.0 — 2026-11-19
 
-- 新增 `tweet-cli`（`bin`）与 `./cli` 子路径：`tweet get/replies/search`、`user get/timeline`、`space get`、`list tweets`、`media download`。
-  CLI 基于 citty（构建时内联，零运行时依赖），默认 JSON 输出、`--format markdown` 人读视图、stderr JSON 错误信封。
-- CLI 在 `runMain` 前校验未知参数（含「最接近的候选」与「参数应写在子命令之后」提示）；`--help` 按终端显示宽度对齐（CJK 记 2 列）。
-- `media download` 以 NDJSON 事件（`item` / `done`）流式输出，支持并发、`--dry-run`、图片原图与最高码率 mp4。
-- 包转型为 `@chilfish/tweet`：X 取数 + 推文富化 SDK，多入口单包（`.` core、`./node` Node 适配、`./cli` 命令行，`./react` 待 Phase 3）。
-- 平台无关传输层：`HttpClient` / `HttpRequest` / `HttpResponse`，默认 `fetch` 实现，超时用 `AbortSignal.timeout`。
-  `requests/*` 从 axios 配置改为中立请求描述符，`paramsSerializer` 由 `encodeQueryParams` 统一处理。
-- 类型化错误：`TwitterApiError` / `RateLimitError` / `AuthError` / `NotFoundError`，替换 `TwitterError` 与 `ErrorService`。
-- `RettiwtPool`：per-key 冷却、指数退避、`inFlight` 负载均衡，分类器 / fetcher 工厂 / logger 均可注入。
-- 解析层进 core：`enrichTweet`、`getEntities`、`mapTwitterCard`、`mapPollCard`、`mapArticle`、`mapSpaceDetails`、`attachSpaceDetails`、`organizeTweets`、`parseTrendingCard`、`normalizeMediaUrl`。
-- `TwitterClient` 门面：`getTweet` / `getReplies` / `searchTweets` / `getUser` / `getUserTimeline` / `getListTweets` / `getSpace`。
-- `./node` 入口：`createNodeClient`（`TWEET_KEYS` / `http_proxy`）、`createProxyFetch`（undici `ProxyAgent`）、`readMediaFile`。
-- 合并 anonTweet 能力：jetfuel Trending 卡、X Article 类型与块解析、guest 搜索放行、置顶推文 ID 列表。
-- 测试迁移：Space / 投票 / 卡片 / transaction-id fixtures，新增 HTTP、Pool、enrich 与导出面契约测试。
+### Added
 
-### 变更
+- Added `tweet-cli` (`bin`) and the `./cli` subpath: `tweet get/replies/search`, `user get/timeline`, `space get`, `list tweets`, `media download`.
+  The CLI is built on citty (inlined at build time, zero runtime dependencies), defaults to JSON output, offers a human-readable `--format markdown` view, and emits a JSON error envelope on stderr.
+- The CLI validates unknown arguments before `runMain` (including "closest candidate" and "arguments must come after the subcommand" hints); `--help` aligns to the terminal display width (CJK counts as 2 columns).
+- `media download` streams NDJSON events (`item` / `done`), supports concurrency and `--dry-run`, and downloads original images and the highest-bitrate mp4.
+- The package became `@chilfish/tweet`: an X data fetching + tweet enrichment SDK, with multiple entries in a single package (`.` core, `./node` Node adapter, `./cli` command line, `./react` pending Phase 3).
+- Platform-agnostic transport layer: `HttpClient` / `HttpRequest` / `HttpResponse`, with a `fetch` implementation by default and timeouts via `AbortSignal.timeout`.
+  `requests/*` moved from axios configuration to neutral request descriptors, and `paramsSerializer` is now handled uniformly by `encodeQueryParams`.
+- Typed errors: `TwitterApiError` / `RateLimitError` / `AuthError` / `NotFoundError`, replacing `TwitterError` and `ErrorService`.
+- `RettiwtPool`: per-key cooldown, exponential backoff, `inFlight` load balancing, with injectable classifier / fetcher factory / logger.
+- Parsing layer moved into core: `enrichTweet`, `getEntities`, `mapTwitterCard`, `mapPollCard`, `mapArticle`, `mapSpaceDetails`, `attachSpaceDetails`, `organizeTweets`, `parseTrendingCard`, `normalizeMediaUrl`.
+- `TwitterClient` facade: `getTweet` / `getReplies` / `searchTweets` / `getUser` / `getUserTimeline` / `getListTweets` / `getSpace`.
+- `./node` entry: `createNodeClient` (`TWEET_KEYS` / `http_proxy`), `createProxyFetch` (undici `ProxyAgent`), `readMediaFile`.
+- Merged anonTweet capabilities: jetfuel Trending cards, X Article type and block parsing, guest search allowlisting, pinned tweet ID lists.
+- Test migration: Space / poll / card / transaction-id fixtures, plus new HTTP, Pool, enrich, and export-surface contract tests.
+- Audit fixes: transaction-id caching per session cookie (10 min TTL, concurrent de-duplication, one refetch on stale shell), guest-credential caching per fetcher, a 30 s default request timeout (`timeout: 0` disables), body-level error classification (code 32/89 → auth, 88 → rate limit), and `FetcherService` / `AuthService` / `TwitterClient` unit tests.
 
-- `EnrichedTweet` 字段统一为 `id` / `quotedTweet` / `quotedTweetId` / `retweetedOriginalId` / `isInlineMedia`。
-- 传输层去 axios：移除 `axios`、`cookiejar`、`form-data`、`node:querystring`、`node:https` Agent 依赖。
-- 媒体上传改为 `Uint8Array | Blob`；文件读取由 `./node` 的 `readMediaFile` 负责。
-- cookie 解析与 base64 编解码改为内置实现（`atob` / `btoa`），不再依赖 Node `Buffer`。
-- 运行时依赖为 `linkedom`、`x-client-transaction-id`（core）与 `undici`（`./node`），均声明在 `neverBundle` 外置。
-- 旧 `Rettiwt` 门面不再导出，低层控制请用 `FetcherService` + `ResourceType`。
-- 新增 `NOTICE.md`，保留 Rettiwt-API（MIT，6.2.0）与 react-tweet（MIT）的原始版权。
-- 构建工具从 unbuild 迁移到 tsdown，产出 ESM + CJS 双格式与独立类型声明。
-- 包管理器从 pnpm 切换到 Bun，锁文件为 `bun.lock`。
-- CI/发布流水线改用真实存在的 action 版本，发布走 OIDC + provenance。
-- 使用 lefthook 接管 Git hooks：pre-commit 对暂存文件执行 `eslint --fix`，pre-push 构建。
-- 修复 `exports` 条件类型、`engines`、`publishConfig` 等元数据。
-- 测试迁移到 `tests/`，增加导出面契约测试与覆盖率配置。
-- 新增 `docs/` 文档体系、`AGENTS.md`、`CHANGELOG.md`。
-- 新增开箱即用基建：`examples/`、`scripts/verify-package.mjs`、`scripts/verify-release-tag.mjs`、`scripts/check-docs.mjs`。
-- 新增社区文件：`CONTRIBUTING.md`、`SECURITY.md`、`CODE_OF_CONDUCT.md`、Issue/PR 模板、`.editorconfig`、`.nvmrc`、Dependabot。
-- CI 增加产物校验、文档校验、示例运行与覆盖率上传；发布增加 registry 轮询。
+### Changed
 
-### 修复
+- `EnrichedTweet` fields unified to `id` / `quotedTweet` / `quotedTweetId` / `retweetedOriginalId` / `isInlineMedia`.
+- `formatDate` now defaults to `yyyy-MM-dd HH:mm:ss`, uses the runtime's time zone (optional `timeZone` argument), and no longer forces Asia/Shanghai; `formatSpaceDate` returns English month names (`Sep 17`).
+- Card CTA labels are English (`Learn more`, `Watch`, `Shop now`, …).
+- Transport layer de-axios'd: removed the `axios`, `cookiejar`, `form-data`, `node:querystring`, and `node:https` Agent dependencies.
+- Media upload now uses `Uint8Array | Blob`; file reading is handled by `readMediaFile` from `./node`.
+- Cookie parsing and base64 encode/decode now use built-in implementations (`atob` / `btoa`) and no longer depend on Node `Buffer`.
+- Runtime dependencies are `linkedom` and `x-client-transaction-id`; `undici` is an optional peer used only by the `./node` proxy dispatcher and loaded lazily.
+- Removed dead code: the unused `Rettiwt` facade, five services only reachable from it, and five unreferenced raw response types.
+- The legacy `Rettiwt` facade is no longer exported; use `FetcherService` + `ResourceType` for low-level control.
+- Added `NOTICE.md`, retaining the original copyright of Rettiwt-API (MIT, 6.2.0) and react-tweet (MIT).
+- Build tooling migrated from unbuild to tsdown, producing ESM + CJS dual format with standalone type declarations.
+- Package manager switched from pnpm to Bun, with `bun.lock` as the lockfile.
+- CI/release pipelines switched to action versions that actually exist; releases go through OIDC + provenance.
+- lefthook now owns Git hooks: pre-commit runs `eslint --fix` on staged files, pre-push builds.
+- Fixed `exports` conditional types, `engines`, `publishConfig`, and other metadata.
+- Tests moved to `tests/`, with export-surface contract tests and coverage configuration added.
+- Added the `docs/` documentation system, `AGENTS.md`, and `CHANGELOG.md`.
+- Added out-of-the-box infrastructure: `examples/`, `scripts/verify-package.mjs`, `scripts/verify-release-tag.mjs`, `scripts/check-docs.mjs`.
+- Added community files: `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, Issue/PR templates, `.editorconfig`, `.nvmrc`, and Dependabot.
+- CI now includes artifact verification, documentation checks, example runs, and coverage upload; publishing now polls the registry.
 
-- CI 的 Node 20 job 不再执行构建（tsdown 要求 Node ≥22），改为消费 `dist` artifact 验证运行时。
-- Dependabot 忽略 `typescript >=7`，`typescript-eslint` 尚不支持该版本。
+### Fixed
+
+- The Node 20 job in CI no longer runs the build (tsdown requires Node ≥22); it now consumes the `dist` artifact to verify the runtime.
+- Dependabot ignores `typescript >=7`, which `typescript-eslint` does not support yet.
