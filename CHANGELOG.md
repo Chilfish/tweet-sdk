@@ -4,6 +4,21 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) an
 
 ## Unreleased
 
+### Added
+
+- `UserData` (structural `IUser` model data) in `./internals`, alongside `UserDetails` (class) and the raw `IUser`, so persisted user JSON can be typed without assertions.
+- `ListRequests` / `UserRequests` / `MediaRequests` in `./internals`, completing the request-descriptor surface.
+- `RettiwtPool.status()` and the `PoolKeyStatus` type for health endpoints and metrics.
+- Type-level contract tests for the `./internals` type-only exports.
+- Workerd smoke coverage for the default transaction-id path (`defaultTidProvider` + `FetcherService` against a local shell fixture, with `nodejs_compat`).
+
+### Changed
+
+- `createClient({ keys: string })` splits comma-separated keys like `createNodeClient` / `TWEET_KEYS`; comma-free strings stay a single key.
+- `NotSupportedError` now carries `status: 403` so consumers mapping `error.status` do not fall back to 500; the pool's default classifier leaves it untouched instead of exhausting into `AuthError`.
+- The default pool classifier retries `408` / `425` / `5xx` without cooldown; `429` / `401` / `403` keep rotation + cooldown.
+- Proxy errors and migration docs now describe native proxy support as Bun-only (Workers / Deno / browsers have no native option).
+
 ## 0.2.0 — 2026-11-19
 
 ### Added

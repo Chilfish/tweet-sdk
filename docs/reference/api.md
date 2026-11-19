@@ -22,17 +22,28 @@ The ESM / CJS public surfaces of each entry are identical, with type declaration
 | Export | Description |
 |---|---|
 | `TwitterClient` | Facade: `getTweet` / `getReplies` / `searchTweets` / `getUser` / `getUserTimeline` / `getListTweets` / `getSpace` / `run` |
-| `createClient(options)` | Platform-neutral factory; never reads `process.env`. Accepts `keys` / `cookie` plus all `RettiwtPoolOptions` |
+| `createClient(options)` | Platform-neutral factory; never reads `process.env`. Accepts `keys` / `cookie` plus all `RettiwtPoolOptions`. A `keys` string containing a comma is split and trimmed like `TWEET_KEYS`; a comma-free string is a single key |
 | `TwitterClientOptions` / `CreateClientOptions` | Named option types (`CreateClientOptions` adds `keys` / `cookie`) |
 | `parseSearchTimeline` | Pure function: `SearchTimeline` response → tweet list + next-page cursor |
-| `RettiwtPool` | Multi-key round-robin pool (cooldown / backoff / load balancing) |
+| `RettiwtPool` | Multi-key round-robin pool (cooldown / backoff / load balancing) with `status()` |
+| `PoolKeyStatus` | Per-key `{ keySuffix, cooldownLeftMs, failStreak, inFlight }` snapshot returned by `pool.status()` |
 | `RettiwtConfig` / `DefaultRettiwtHeaders` | Runtime configuration |
 | `FetcherService` | Low-level requests: `request(ResourceType, args)` |
 | `TwitterAPIClient` | **Runtime value**: raw fetch composition layer (pool + resource types), including `onFetchedresponse` |
 | `TweetEnrichmentService` | Bulk enrichment helper |
 | `ResourceType` / `TweetRepliesSortType` / `BaseType` | Resource and sort enums |
 
-`RettiwtPoolOptions.proxy` creates a transport when `httpClient` is absent. On Bun it uses the native `fetch` `proxy` option. On Node the core factory throws a guidance error because importing undici in the core would break Workers builds; use `createProxyFetch` / `createNodeClient` from `@chilfish/tweet/node` instead.
+`RettiwtPoolOptions.proxy` creates a transport when `httpClient` is absent. On Bun it uses the native `fetch` `proxy` option. On Node the core factory throws a guidance error because importing undici in the core would break Workers builds; use `createProxyFetch` / `createNodeClient` from `@chilfish/tweet/node` instead. Workers / Deno / browsers have no native proxy option.
+
+Default retry policy (`shouldRetry` is injectable):
+
+| status | retry | cooldown |
+|---|---|---|
+| 429 / 401 / 403 | yes | key-level cooldown + rotation |
+| 408 / 425 / 5xx | yes | no cooldown |
+| anything else | no | — |
+
+`pool.status()` returns the same `keySuffix` / `cooldownLeftMs` / `failStreak` / `inFlight` values used by the `pool.rotate` log, for health endpoints and metrics.
 
 ### Transport and configuration
 
@@ -53,10 +64,10 @@ The ESM / CJS public surfaces of each entry are identical, with type declaration
 | `RateLimitError` | 429 |
 | `AuthError` | 401 / 403 |
 | `NotFoundError` | 404 |
-| `NotSupportedError` | `undefined`; the resource needs a user credential but only a guest session is available |
+| `NotSupportedError` | 403; the resource needs a user credential but only a guest session is available |
 | `PoolExhaustedError` | `undefined` unless the last failure carried 429/401/403; preserves the real network/parse cause |
 
-`RESOURCE_NOT_ALLOWED` and `BAD_AUTHENTICATION` are thrown as `NotSupportedError` and `AuthError` respectively, so consumers can branch with `instanceof` instead of matching messages.
+`RESOURCE_NOT_ALLOWED` and `BAD_AUTHENTICATION` are thrown as `NotSupportedError` and `AuthError` respectively, so consumers can branch with `instanceof` instead of matching messages. The pool's default classifier does not retry `NotSupportedError`, so it reaches the caller unchanged instead of exhausting into `AuthError`.
 
 ### Logger contract
 
@@ -80,7 +91,7 @@ The ESM / CJS public surfaces of each entry are identical, with type declaration
 | `resolveArticleId` / `resolveArticleLink` / `isArticleUrl` / `parseContentState` | Article detection and block parsing |
 | `parseTrendingCard` | jetfuel payload → Trending card |
 | `organizeTweets` | Thread / reply-section organization |
-| `formatDate` | Time-zone formatting |
+| `formatDate` | Time-zone formatting; the third argument is an optional IANA `timeZone`, defaulting to the runtime's local zone (Workers = UTC) |
 | `normalizeMediaUrl` / `normalizeProfileImageUrl` | twimg media and avatar URL normalization |
 
 `EnrichedTweet` interaction counters are always populated:
@@ -115,11 +126,13 @@ Field naming conventions (since 0.1.0):
 
 | Group | Exports |
 |---|---|
-| Raw types | `IUser` / `IRawSpace` / `ISpaceDetailsResponse` / `IListTweetsResponse` / `ITweetDetailsResponse` / `ITweetRepliesResponse` / `ITweetSearchResponse` / `IUserDetailsResponse` / `IUserTweetsResponse` / `RawArticle*` |
-| Models | `UserDetails` (`User` class type) / `TweetFilter` / `FetchArgs` |
-| Collections | `Extractors` / `Requests` / `TweetRequests` / `SpaceRequests` / `FetchResourcesGroup` / `AllowGuestAuthenticationGroup` |
+| Raw types | `IUser` (raw response) / `IRawSpace` / `ISpaceDetailsResponse` / `IListTweetsResponse` / `ITweetDetailsResponse` / `ITweetRepliesResponse` / `ITweetSearchResponse` / `IUserDetailsResponse` / `IUserTweetsResponse` / `RawArticle*` |
+| Models | `UserData` (structural `IUser` model data for persisted JSON) / `UserDetails` (`User` class type) / `TweetFilter` / `FetchArgs` |
+| Collections | `Extractors` / `Requests` / `TweetRequests` / `SpaceRequests` / `ListRequests` / `UserRequests` / `MediaRequests` / `FetchResourcesGroup` / `AllowGuestAuthenticationGroup` |
 | Helpers | `findByFilter` |
 | Services | `TwitterAPIClient` |
+
+`UserData` is the shape to use for cached/persisted user JSON (`User.toJSON()`); `UserDetails` is the live class type (includes `raw` / `toJSON`); `IUser` is the raw upstream response and is not the same object.
 
 See [migration.md](../guide/migration.md) for the vendor-copy replacement recipe.
 

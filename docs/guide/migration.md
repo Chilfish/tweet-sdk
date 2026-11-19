@@ -25,9 +25,20 @@ import type {
   IUserDetailsResponse,
   IUserTweetsResponse,
   RawArticleResult,
+  UserData,
   UserDetails,
 } from '@chilfish/tweet/internals'
-import { Extractors, findByFilter, Requests, SpaceRequests, TweetFilter, TweetRequests } from '@chilfish/tweet/internals'
+import {
+  Extractors,
+  findByFilter,
+  ListRequests,
+  MediaRequests,
+  Requests,
+  SpaceRequests,
+  TweetFilter,
+  TweetRequests,
+  UserRequests,
+} from '@chilfish/tweet/internals'
 ```
 
 This lets a consumer delete its `packages/rettiwt-api` copy while keeping the
@@ -38,10 +49,15 @@ type-level, descriptor and fixture tests that guard against upstream drift.
 | `../rettiwt-api/src/lib/types/raw/**` (`I*Response`, `IUser`, `IRawSpace`) | `@chilfish/tweet/internals` |
 | `../rettiwt-api/src/lib/collections/Extractors` | `Extractors` from `@chilfish/tweet/internals` |
 | `../rettiwt-api/src/lib/models/args/FetchArgs` (`TweetFilter`) | `TweetFilter` from `@chilfish/tweet/internals` |
-| `../rettiwt-api/src/lib/requests/*` | `Requests` / `TweetRequests` / `SpaceRequests` from `@chilfish/tweet/internals` |
+| `../rettiwt-api/src/lib/requests/*` | `Requests` / `TweetRequests` / `SpaceRequests` / `ListRequests` / `UserRequests` / `MediaRequests` from `@chilfish/tweet/internals` |
 | `../rettiwt-api/src/lib/helper/JsonUtils` (`findByFilter`) | `findByFilter` from `@chilfish/tweet/internals` |
 | `Awaited<ReturnType<TwitterClient['getUser']>>` | `UserDetails` from `@chilfish/tweet/internals` |
+| persisted `fetchUserDetails()` JSON | `UserData` from `@chilfish/tweet/internals` |
 | `TwitterAPIClient` (type-only before) | runtime value from `@chilfish/tweet` |
+
+The three user types are different: `IUser` is the raw upstream response,
+`UserData` is the structural model data written by `User.toJSON()` (use this for
+cache/database columns), and `UserDetails` is the `User` class instance type.
 
 `./internals` has no SemVer guarantee: it mirrors `src/lib/**` and may change in a
 minor release. Move application code off it once the parity tests are ported.
@@ -86,7 +102,26 @@ import { createClient } from '@chilfish/tweet'
 const client = createClient({ keys, proxy, logger })
 ```
 
-On Node, `createNodeClient` keeps the environment-based convenience path and
-`createProxyFetch` (from `./node`) uses undici. On Bun, the same helper uses Bun's
-native `fetch` proxy option; setting `RettiwtPoolOptions.proxy` directly also works
-there.
+A `keys` string containing a comma is split and trimmed like `TWEET_KEYS`
+(`createClient({ keys: process.env.TWEET_KEYS })` now keeps multi-key rotation);
+a comma-free string remains a single key.
+
+Native proxy support is **Bun-only**. On Node, `createNodeClient` keeps the
+environment-based convenience path and `createProxyFetch` (from `./node`) uses
+undici. On Workers, Deno and browsers there is no native proxy option; pass a
+custom `httpClient` if you need one.
+
+## 5. Errors, retries and time zones
+
+- `NotSupportedError` carries `status: 403` by default. Map
+  `instanceof NotSupportedError` to a config/auth response instead of falling
+  back to 500. `AuthError` stays 401/403; the pool does not retry or reclassify
+  `NotSupportedError`.
+- The default pool classifier retries `408` / `425` / `5xx` without cooling the
+  key down; `429` / `401` / `403` rotate and cool the key. `shouldRetry` remains
+  injectable.
+- `pool.status()` exposes per-key `keySuffix` / `cooldownLeftMs` / `failStreak` /
+  `inFlight` for health endpoints and metrics.
+- `formatDate` defaults to the runtime's local time zone. Workers run in UTC, so
+  pass an explicit `timeZone` (for example `'Asia/Shanghai'`) when you need the
+  old wrapper's formatting.
