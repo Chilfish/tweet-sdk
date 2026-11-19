@@ -80,6 +80,17 @@ jobs:
         # so here we only verify that the built artifacts import correctly on each target Node.
         node: [20, 22, 24]
     steps:
+      - uses: actions/checkout@v7
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+
+      # The dist artifact references runtime dependencies (linkedom,
+      # x-client-transaction-id) as bare specifiers, so resolve them before
+      # importing the build on each Node version.
+      - run: bun install --frozen-lockfile --production
+
       - uses: actions/download-artifact@v8
         with:
           name: dist

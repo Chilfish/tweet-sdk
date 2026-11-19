@@ -44,7 +44,7 @@ After the build, CI verifies that the entry files exist and imports them under N
 - `files` contains only `dist`, `LICENSE.md`, `NOTICE.md`, `README.md`.
 - `sideEffects: false` guarantees tree-shaking.
 - `engines.node` stays in sync with the lower bound of the CI matrix.
-- `publishConfig.provenance: true` attaches provenance to the publish.
+- The publish workflow requests provenance explicitly with `npm publish --provenance`; `publishConfig` only declares `access: public`, because npm refuses to generate provenance for a manual local publish.
 
 `tests/exports.test.ts` locks the shape above; changing the export surface requires changing the test first.
 
@@ -66,8 +66,8 @@ first release is manual:
 
 1. Push the tag; `publish.yml` runs but its `publish` job is **skipped** because the
    repository variable `NPM_OIDC_READY` is unset.
-2. From a clean checkout of the tag, run `npm publish --access public` (and
-   `--provenance` when publishing from CI with a local `NPM_TOKEN`, if you prefer).
+2. From a clean checkout of the tag, run `npm publish --access public`. Do not pass
+   `--provenance` locally; provenance is only available from a supported CI provider.
 3. In the npm package settings, bind this repository + `publish.yml` as the Trusted
    Publisher.
 4. Set the repository variable `NPM_OIDC_READY=true` (Settings → Secrets and

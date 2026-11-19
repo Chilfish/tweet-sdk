@@ -12,7 +12,7 @@
 | `sideEffects` | `false` | Guarantees tree-shaking |
 | `files` | `dist` / `LICENSE.md` / `NOTICE.md` / `README.md` | Publishes only artifacts, documentation and upstream notices |
 | `engines.node` | `>=20` | Matches the lower bound of the CI runtime matrix |
-| `publishConfig` | `access: public`, `provenance: true` | Publishes via OIDC with provenance attestation |
+| `publishConfig` | `access: public` | Scoped package publishes publicly; provenance is requested explicitly by the publish workflow (`npm publish --provenance`) |
 
 ## exports
 
