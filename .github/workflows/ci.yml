@@ -44,6 +44,10 @@ jobs:
           test -f dist/index.cjs
           test -f dist/index.d.ts
           test -f dist/index.d.cts
+          test -f dist/node.js
+          test -f dist/node.cjs
+          test -f dist/node.d.ts
+          test -f dist/node.d.cts
 
       - name: Upload coverage
         uses: actions/upload-artifact@v7
@@ -81,7 +85,7 @@ jobs:
           node-version: ${{ matrix.node }}
 
       - name: Import ESM build
-        run: node --input-type=module -e "const m = await import('./dist/index.js'); if (typeof m.one !== 'number') process.exit(1)"
+        run: node --input-type=module -e "const m = await import('./dist/index.js'); if (typeof m.TwitterClient !== 'function' || !m.ResourceType) process.exit(1); const n = await import('./dist/node.js'); if (typeof n.createNodeClient !== 'function') process.exit(1)"
 
       - name: Import CJS build
-        run: node -e "const m = require('./dist/index.cjs'); if (typeof m.one !== 'number') process.exit(1)"
+        run: node -e "const m = require('./dist/index.cjs'); if (typeof m.TwitterClient !== 'function' || !m.ResourceType) process.exit(1); const n = require('./dist/node.cjs'); if (typeof n.createNodeClient !== 'function') process.exit(1)"
