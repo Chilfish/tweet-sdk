@@ -1,18 +1,18 @@
-# package.json 契约
+# package.json Contract
 
-`package.json` 是发布产物的唯一事实来源，构建过程不得改写发布字段。
+`package.json` is the single source of truth for the published artifacts; the build must not rewrite any publishing field.
 
-## 必填字段
+## Required fields
 
-| 字段 | 当前值 | 约束 |
+| Field | Current value | Constraint |
 |---|---|---|
-| `name` | `@chilfish/tweet` | 需要与 npm 包名一致 |
-| `type` | `module` | 源码与 ESM 产物均按 ESM 解析 |
-| `packageManager` | `bun@1.4.4` | 必须与 CI 的 bun 版本一致 |
-| `sideEffects` | `false` | 保证 tree-shaking |
-| `files` | `dist` / `LICENSE.md` / `NOTICE.md` / `README.md` | 只发布产物、文档与上游声明 |
-| `engines.node` | `>=20` | 与 CI 运行时矩阵下限一致 |
-| `publishConfig` | `access: public`、`provenance: true` | 通过 OIDC 发布并附带来源证明 |
+| `name` | `@chilfish/tweet` | Must match the npm package name |
+| `type` | `module` | Source and ESM artifacts are both resolved as ESM |
+| `packageManager` | `bun@1.4.4` | Must match the bun version used in CI |
+| `sideEffects` | `false` | Guarantees tree-shaking |
+| `files` | `dist` / `LICENSE.md` / `NOTICE.md` / `README.md` | Publishes only artifacts, documentation and upstream notices |
+| `engines.node` | `>=20` | Matches the lower bound of the CI runtime matrix |
+| `publishConfig` | `access: public`, `provenance: true` | Publishes via OIDC with provenance attestation |
 
 ## exports
 
@@ -34,7 +34,7 @@
 }
 ```
 
-`bin` 指向 `./dist/cli-bin.js`（带 shebang，构建时自动加可执行权限）：
+`bin` points to `./dist/cli-bin.js` (it carries a shebang, and the executable bit is added automatically at build time):
 
 ```json
 {
@@ -42,46 +42,46 @@
 }
 ```
 
-规则：
+Rules:
 
-- `types` 必须位于各自条件分支内、且在 `default` 之前。
-- 不允许裸字符串导出（例如 `".": "./dist/index.js"`）。
-- 每个目标文件必须真实存在，`bun run verify:package` 会校验（含 `bin` 目标）。
-- 新增子路径时同步 `tests/exports.test.ts` 与 `tsdown.config.ts#entry`。
-- `./node` / `./cli` / `./cli-bin` 是允许引入 `node:*` 的入口；core 构建失败即视为破坏 `platform: 'neutral'`。
+- `types` must live inside each condition branch and come before `default`.
+- Bare string exports (for example `".": "./dist/index.js"`) are not allowed.
+- Every target file must actually exist; `bun run verify:package` validates this (including the `bin` target).
+- New subpaths must be mirrored in `tests/exports.test.ts` and `tsdown.config.ts#entry`.
+- `./node` / `./cli` / `./cli-bin` are the entries allowed to import `node:*`; a failing core build counts as breaking `platform: 'neutral'`.
 
-## 顶层兼容字段
+## Legacy top-level fields
 
-`main` / `module` / `types` 仅为兼容旧工具保留：
+`main` / `module` / `types` are kept only for compatibility with older tooling:
 
-| 字段 | 值 |
+| Field | Value |
 |---|---|
 | `main` | `./dist/index.cjs` |
 | `module` | `./dist/index.js` |
 | `types` | `./dist/index.d.ts` |
 
-新代码应依赖 `exports`，不要依赖这三个字段。
+New code should rely on `exports`, not on these three fields.
 
-## 依赖
+## Dependencies
 
-运行时依赖只允许以下三个，且都必须是平台无关或仅由 `./node` 触达：
+Runtime dependencies are limited to the following three, and each must be either platform-agnostic or only reachable from `./node`:
 
-| 依赖 | 用途 | 触达入口 |
+| Dependency | Purpose | Entry that reaches it |
 |---|---|---|
-| `linkedom` | 解析 X 页面壳，生成 transaction id | core（纯 JS） |
-| `x-client-transaction-id` | `x-client-transaction-id` 头计算 | core（纯 JS） |
-| `undici` | Node fetch 的 proxy dispatcher（`ProxyAgent`） | `./node` 懒加载 |
+| `linkedom` | Parse the X page shell to generate the transaction id | core (pure JS) |
+| `x-client-transaction-id` | `x-client-transaction-id` header computation | core (pure JS) |
+| `undici` | Proxy dispatcher for Node fetch (`ProxyAgent`) | lazily loaded by `./node` |
 
-- 工具链全部放 `devDependencies`，版本使用 caret。
-- 新增运行时依赖必须说明必要性、体积与替代方案，并同步本文。
-- 修改依赖后必须提交更新后的 `bun.lock`。
-- 策略详见 [dependencies](../engineering/dependencies.md)。
+- The whole toolchain lives in `devDependencies`, with caret versions.
+- Adding a runtime dependency requires justifying the need, the size and the alternatives, and updating this document.
+- After changing dependencies you must commit the updated `bun.lock`.
+- See [dependencies](../engineering/dependencies.md) for the full policy.
 
-## 脚本
+## Scripts
 
-| 脚本 | 约定 |
+| Script | Convention |
 |---|---|
-| `build` | 只调用 `tsdown`，不做额外拷贝 |
-| `check` | 汇总全量门禁，CI 与本地共用 |
-| `prepublishOnly` | 只构建，防误发 |
-| `release` | 只做版本升级与 tag，不在本地 publish |
+| `build` | Calls `tsdown` only; performs no extra copying |
+| `check` | Aggregates the full gate, shared by CI and local runs |
+| `prepublishOnly` | Builds only, to prevent accidental publishes |
+| `release` | Only bumps the version and creates the tag; never publishes locally |

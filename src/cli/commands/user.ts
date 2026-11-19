@@ -8,12 +8,12 @@ import { clientArg, createClient, enrich } from '../shared'
 export const userGet = defineCommand({
   meta: {
     name: 'get',
-    description: '获取用户资料（用户名或数字 ID）',
+    description: 'Fetch a user profile (username or numeric ID)',
   },
   args: {
     id: {
       type: 'positional',
-      description: '用户名（@ 可省略）或数字 ID',
+      description: 'Username (the @ is optional) or numeric ID',
       required: true,
     },
     ...outputFormatArg,
@@ -26,7 +26,7 @@ export const userGet = defineCommand({
 
     if (!user) {
       print(null, {
-        markdown: () => `未找到用户 ${args.id}`,
+        markdown: () => `User ${args.id} not found`,
       })
       return
     }
@@ -38,21 +38,21 @@ export const userGet = defineCommand({
 export const userTimeline = defineCommand({
   meta: {
     name: 'timeline',
-    description: '获取用户时间线（帖子 + 回复，按 bottom cursor 翻页）',
+    description: 'Fetch a user timeline (posts + replies, paged by bottom cursor)',
   },
   args: {
     id: {
       type: 'positional',
-      description: '用户数字 ID',
+      description: 'Numeric user ID',
       required: true,
     },
     cursor: {
       type: 'string',
-      description: '翻页 cursor（上一页返回的 nextCursor）',
+      description: 'Pagination cursor (the nextCursor returned by the previous page)',
     },
     limit: {
       type: 'string',
-      description: '本页最多输出条数（客户端截断）',
+      description: 'Maximum items emitted for this page (truncated client-side)',
     },
     ...outputFormatArg,
     ...clientArg,

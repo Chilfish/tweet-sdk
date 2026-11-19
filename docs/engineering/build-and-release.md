@@ -1,75 +1,75 @@
-# 构建与发布
+# Build and release
 
-## 构建
+## Build
 
-工具：**tsdown**（rolldown 内核），配置见 `tsdown.config.ts`。
+Tool: **tsdown** (rolldown core). Configuration lives in `tsdown.config.ts`.
 
-| 项 | 取值 | 理由 |
+| Item | Value | Rationale |
 |---|---|---|
-| `entry` | `src/index.ts`、`src/node.ts`、`src/cli.ts`、`src/cli-bin.ts` | 多入口：core + Node 适配 + CLI + bin |
-| `format` | `esm` + `cjs` | 同时兼容 `import` 与 `require` |
-| `dts` | `true` | 生成 `index.*` / `node.*` / `cli.*` 类型声明 |
-| `platform` | `neutral` | 不绑定 Node；`node:` 只出现在 `./node` / `./cli` |
-| `target` | `es2022` | 现代语法，避免过度降级 |
-| `neverBundle` | `/^node:/`、`linkedom`、`x-client-transaction-id`、`undici` | 运行时依赖保持外部化 |
-| `alwaysBundle` | `citty` | CLI 框架零依赖，内联后无需安装即可 `bunx` / `npx` |
-| `exports` | `false` | `package.json#exports` 手工维护，构建不得改写 |
+| `entry` | `src/index.ts`, `src/node.ts`, `src/cli.ts`, `src/cli-bin.ts` | multiple entries: core + Node adapter + CLI + bin |
+| `format` | `esm` + `cjs` | compatible with both `import` and `require` |
+| `dts` | `true` | generates `index.*` / `node.*` / `cli.*` type declarations |
+| `platform` | `neutral` | not bound to Node; `node:` appears only in `./node` / `./cli` |
+| `target` | `es2022` | modern syntax, avoids excessive downleveling |
+| `neverBundle` | `/^node:/`, `linkedom`, `x-client-transaction-id`, `undici` | runtime dependencies stay external |
+| `alwaysBundle` | `citty` | the CLI framework has zero dependencies, so inlining it makes `bunx` / `npx` work without installing anything |
+| `exports` | `false` | `package.json#exports` is maintained by hand and the build must not rewrite it |
 
-产物契约：
+Output contract:
 
 ```
 dist/index.js      core ESM
 dist/index.cjs     core CJS
-dist/index.d.ts    core ESM 类型
-dist/index.d.cts   core CJS 类型
-dist/node.js       Node 适配 ESM
-dist/node.cjs      Node 适配 CJS
-dist/node.d.ts     Node 适配 ESM 类型
-dist/node.d.cts    Node 适配 CJS 类型
-dist/cli.js        CLI 命令树 ESM
-dist/cli.cjs       CLI 命令树 CJS
-dist/cli.d.ts      CLI 类型
-dist/cli.d.cts     CLI CJS 类型
-dist/cli-bin.js    bin（带 shebang，构建自动加可执行权限）
+dist/index.d.ts    core ESM types
+dist/index.d.cts   core CJS types
+dist/node.js       Node adapter ESM
+dist/node.cjs      Node adapter CJS
+dist/node.d.ts     Node adapter ESM types
+dist/node.d.cts    Node adapter CJS types
+dist/cli.js        CLI command tree ESM
+dist/cli.cjs       CLI command tree CJS
+dist/cli.d.ts      CLI types
+dist/cli.d.cts     CLI CJS types
+dist/cli-bin.js    bin (with shebang; the build adds the executable bit automatically)
 ```
 
-共享代码会被拆成 `client-<hash>.js` 之类的 chunk，各入口通过它复用实现；发布只需保证上述入口文件存在。
+Shared code is split into chunks such as `client-<hash>.js`, and each entry reuses the implementation through it; publishing only has to guarantee that the entry files above exist.
 
-CI 会在 build 后校验入口文件存在，并分别在 Node 20/22/24 下导入验证；`bun run verify:package` 还会检查 tarball 文件清单，确保源码、测试、脚本不会被打进发布包。
+After the build, CI verifies that the entry files exist and imports them under Node 20/22/24; `bun run verify:package` also checks the tarball file list to make sure source, tests and scripts do not end up in the published package.
 
-## package.json 契约
+## package.json contract
 
-- `exports["."]`、`exports["./node"]` 与 `exports["./cli"]` 必须是 `import` / `require` 各自带 `types` 的条件对象。
-- `bin` 指向 `./dist/cli-bin.js`，`verify:package` 会校验目标存在。
-- `files` 只包含 `dist`、`LICENSE.md`、`NOTICE.md`、`README.md`。
-- `sideEffects: false`，保证 tree-shaking。
-- `engines.node` 与 CI 矩阵下限保持一致。
-- `publishConfig.provenance: true`，发布时附带来源证明。
+- `exports["."]`, `exports["./node"]` and `exports["./cli"]` must be conditional objects with their own `types` under `import` / `require`.
+- `bin` points to `./dist/cli-bin.js`, and `verify:package` checks that the target exists.
+- `files` contains only `dist`, `LICENSE.md`, `NOTICE.md`, `README.md`.
+- `sideEffects: false` guarantees tree-shaking.
+- `engines.node` stays in sync with the lower bound of the CI matrix.
+- `publishConfig.provenance: true` attaches provenance to the publish.
 
-`tests/exports.test.ts` 锁定上述形状，改动导出面必须先改测试。
+`tests/exports.test.ts` locks the shape above; changing the export surface requires changing the test first.
 
-## 发布链路
+## Release pipeline
 
-1. 更新 `CHANGELOG.md` 的 `## Unreleased`，写清本版变化。
-2. `bun run release` → `bumpp` 升级版本、提交、打 tag、推送。
-3. tag 推送触发 `.github/workflows/publish.yml`：
-   - 校验 tag 与 `package.json#version` 一致
-   - 校验 `CHANGELOG.md` 存在 `## <version>` 节
+1. Update `## Unreleased` in `CHANGELOG.md` and describe this version's changes.
+2. `bun run release` → `bumpp` bumps the version, commits, creates the tag and pushes.
+3. The tag push triggers `.github/workflows/publish.yml`:
+   - verify the tag matches `package.json#version`
+   - verify `CHANGELOG.md` contains a `## <version>` section
    - typecheck / lint:check / test / build
    - `npm publish --provenance --access public`
-4. 发布后再创建 GitHub Release（可复用 CHANGELOG 该节作为 notes）。
+4. After publishing, create the GitHub Release (the same CHANGELOG section can serve as the notes).
 
-## 认证
+## Authentication
 
-使用 **npm Trusted Publisher（OIDC）**，不配置 `NPM_TOKEN`：
+Use **npm Trusted Publisher (OIDC)** and do not configure `NPM_TOKEN`:
 
-- workflow 需要 `permissions.id-token: write`。
-- `setup-node` 刻意**不设置** `registry-url`，避免写入占位 token 的 `.npmrc`。
-- 首次发布前在 npm 包设置中绑定本仓库与本 workflow。
+- The workflow needs `permissions.id-token: write`.
+- `setup-node` deliberately **does not** set `registry-url`, to avoid writing an `.npmrc` with a placeholder token.
+- Before the first release, bind this repository and this workflow in the npm package settings.
 
-## 禁止
+## Forbidden
 
-- 本地直接 `npm publish`（绕过门禁）。
-- 在 `tsdown.config.ts` 中开启 `exports: true`（会改写手工维护的 exports）。
-- 发布前不更新 CHANGELOG（CI 会直接失败）。
-- 在 core 中引入运行时 `node:*` 导入（破坏 `platform: 'neutral'`）。
+- Running `npm publish` directly locally (bypasses the gates).
+- Enabling `exports: true` in `tsdown.config.ts` (it would rewrite the hand-maintained exports).
+- Publishing without updating CHANGELOG (CI fails immediately).
+- Introducing runtime `node:*` imports in core (breaks `platform: 'neutral'`).

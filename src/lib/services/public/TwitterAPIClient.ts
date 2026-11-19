@@ -20,8 +20,8 @@ export interface CursoredTweets {
 }
 
 /**
- * Twitter API 底层交互客户端
- * 职责：封装所有与 Twitter API 的原始请求，返回未处理的原始数据
+ * Low-level Twitter API client.
+ * Responsibility: wrap every raw request to the Twitter API and return unprocessed raw data.
  */
 export class TwitterAPIClient {
   public onFetchedresponse: (key: string, data: any) => Promise<void> = async () => {}
@@ -29,8 +29,8 @@ export class TwitterAPIClient {
   constructor(private readonly pool: RettiwtPool) {}
 
   /**
-   * 获取单条推文的原始数据
-   * @throws {Error} 当 API 请求失败时抛出异常
+   * Fetch the raw data of a single tweet.
+   * @throws {Error} Thrown when the API request fails
    */
   async fetchTweetRaw(id: string): Promise<RawTweet> {
     return this.pool.run(async (fetcher) => {
@@ -43,11 +43,12 @@ export class TwitterAPIClient {
   }
 
   /**
-   * 获取 Space（语音直播/录音回放）的原始详情
+   * Fetch the raw details of a Space (audio livestream / recording replay).
    *
-   * Space 推文的 `card` 是空壳（binding 只有 tweet_id / id / card_url，无标题与图片），
-   * 标题/主播/人数/时长全在 `AudioSpaceById` 的 `audioSpace.metadata` 里，
-   * 故卡片数据必须再打一次这个端点。查不到（已删除/无权限）时返回 null。
+   * The `card` of a Space tweet is a shell (the bindings only carry tweet_id / id / card_url,
+   * no title and no image); the title, host, listener count and duration all live in
+   * `audioSpace.metadata` of `AudioSpaceById`, so the card data has to be backed by one more
+   * call to this endpoint. Returns null when it cannot be found (deleted / no permission).
    */
   async fetchSpaceDetails(id: string): Promise<IAudioSpace | null> {
     return this.pool.run(async (fetcher) => {
@@ -61,7 +62,7 @@ export class TwitterAPIClient {
   }
 
   /**
-   * 获取列表推文的原始数据
+   * Fetch the raw data of the tweets in a list.
    */
   async fetchListTweetsRaw(id: string): Promise<RawTweet[]> {
     return this.pool.run(async (fetcher) => {
@@ -82,8 +83,8 @@ export class TwitterAPIClient {
   }
 
   /**
-   * 获取用户详情
-   * @param id - 用户 ID 或用户名
+   * Fetch user details.
+   * @param id - User ID or username
    */
   async fetchUserDetailsRaw(id: string): Promise<EnrichedUser | null> {
     if (!id) {
@@ -108,7 +109,7 @@ export class TwitterAPIClient {
   }
 
   /**
-   * 获取用户时间线原始数据
+   * Fetch the raw user timeline data.
    */
   async fetchUserTimelineRaw(userId: string, cursor?: string): Promise<CursoredTweets> {
     return this.pool.run(async (fetcher) => {
@@ -130,7 +131,7 @@ export class TwitterAPIClient {
   }
 
   /**
-   * 获取用户时间线（含回复）原始数据
+   * Fetch the raw user timeline data, including replies.
    */
   async fetchUserTimelineWithRepliesRaw(userId: string, cursor?: string): Promise<CursoredTweets> {
     return this.pool.run(async (fetcher) => {
@@ -156,7 +157,7 @@ export class TwitterAPIClient {
   }
 
   /**
-   * 获取推文回复的原始数据
+   * Fetch the raw data of the replies to a tweet.
    */
   async fetchRepliesRaw(tweetId: string): Promise<RawTweet[]> {
     return this.pool.run(async (fetcher) => {
@@ -181,7 +182,7 @@ export class TwitterAPIClient {
   }
 
   /**
-   * 搜索推文
+   * Search tweets.
    */
   public async searchTweetsRaw(filter: ITweetFilter, cursor?: string, count?: number): Promise<CursoredTweets> {
     return this.pool.run(async (fetcher) => {
@@ -217,7 +218,7 @@ export class TwitterAPIClient {
   }
 
   /**
-   * 从时间线响应中提取推文列表
+   * Extract the tweet list from a timeline response.
    * @private
    */
   private extractTimelineTweets(response: IUserTweetsResponse): RawTweet[] {
@@ -254,7 +255,7 @@ export class TwitterAPIClient {
   }
 
   /**
-   * 提取主推文
+   * Extract the main tweet.
    * @private
    */
 
@@ -269,7 +270,7 @@ export class TwitterAPIClient {
   }
 
   /**
-   * 提取评论列表
+   * Extract the list of comments.
    * @private
    */
   private extractComments(instructions: any[]): RawTweet[] {
@@ -282,7 +283,7 @@ export class TwitterAPIClient {
   }
 
   /**
-   * 提取搜索结果的推文
+   * Extract the tweets from search results.
    * @private
    */
   private extractSearchTweets(instructions: any[]): RawTweet[] {

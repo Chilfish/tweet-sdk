@@ -7,12 +7,12 @@ import { clientArg, createClient, enrich } from '../shared'
 export const listTweets = defineCommand({
   meta: {
     name: 'tweets',
-    description: '获取列表内的推文',
+    description: 'Fetch the tweets in a list',
   },
   args: {
     id: {
       type: 'positional',
-      description: '列表 ID',
+      description: 'List ID',
       required: true,
     },
     ...outputFormatArg,

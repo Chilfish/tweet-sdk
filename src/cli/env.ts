@@ -2,10 +2,10 @@ import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 /**
- * 极简 `.env` 读取：只支持 `KEY=VALUE`、`#` 注释、单双引号包裹。
+ * Minimal `.env` reader: supports only `KEY=VALUE`, `#` comments, and single/double-quoted values.
  *
- * 不引入 dotenv：CLI 只需要读 `TWEET_KEYS` / `http_proxy` 这类简单值，
- * 且显式 `--keys` / `--cookie` 永远优先。
+ * No dotenv dependency: the CLI only needs simple values like `TWEET_KEYS` / `http_proxy`,
+ * and explicit `--keys` / `--cookie` always take precedence.
  */
 export function readEnvFile(path: string): Record<string, string> {
   if (!existsSync(path))
@@ -33,7 +33,7 @@ export function readEnvFile(path: string): Record<string, string> {
   return values
 }
 
-/** 解析 `--env-file` 路径（相对路径按 cwd 解析），默认 `<pwd>/.env`。 */
+/** Resolve the `--env-file` path (relative paths resolve against cwd); defaults to `<pwd>/.env`. */
 export function getEnvFilePath(value: unknown): string {
   return typeof value === 'string' && value.trim() !== ''
     ? resolve(process.cwd(), value)

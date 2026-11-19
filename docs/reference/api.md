@@ -1,102 +1,102 @@
-# 公开 API
+# Public API
 
-`src/index.ts` 是 core 入口；`src/node.ts` 是 `./node` 子路径入口；`src/cli.ts` 是 `./cli` 入口；`src/cli-bin.ts` 是 bin（`tweet-cli`）。`src/lib/**` 的内部路径不属于公开 API。
+`src/index.ts` is the core entry; `src/node.ts` is the `./node` subpath entry; `src/cli.ts` is the `./cli` entry; `src/cli-bin.ts` is the bin (`tweet-cli`). Internal paths under `src/lib/**` are not part of the public API.
 
-## 入口
+## Entries
 
-| 入口 | 产物 | 运行时 |
+| Entry | Artifacts | Runtime |
 |---|---|---|
-| `@chilfish/tweet` | `dist/index.js` / `dist/index.cjs` | 平台无关（fetch 即可） |
-| `@chilfish/tweet/node` | `dist/node.js` / `dist/node.cjs` | Node 20+（`node:fs`、undici dispatcher） |
-| `@chilfish/tweet/cli` | `dist/cli.js` / `dist/cli.cjs` | Node 20+（可嵌入命令树） |
-| `tweet-cli`（bin） | `dist/cli-bin.js` | Node 20+（`bunx` / `npx`） |
-| `@chilfish/tweet/react` | 待 Phase 3 | 浏览器 |
+| `@chilfish/tweet` | `dist/index.js` / `dist/index.cjs` | Platform-agnostic (fetch is all it needs) |
+| `@chilfish/tweet/node` | `dist/node.js` / `dist/node.cjs` | Node 20+ (`node:fs`, undici dispatcher) |
+| `@chilfish/tweet/cli` | `dist/cli.js` / `dist/cli.cjs` | Node 20+ (embeddable command tree) |
+| `tweet-cli` (bin) | `dist/cli-bin.js` | Node 20+ (`bunx` / `npx`) |
+| `@chilfish/tweet/react` | Phase 3 (pending) | Browser |
 
-各入口的 ESM / CJS 公开面一致，类型声明分别为 `index.d.ts` / `index.d.cts`（`node.*`、`cli.*` 同理）。
+The ESM / CJS public surfaces of each entry are identical, with type declarations at `index.d.ts` / `index.d.cts` (likewise for `node.*` and `cli.*`).
 
-## core 导出面
+## core export surface
 
-### 取数
+### Fetching
 
-| 导出 | 说明 |
+| Export | Description |
 |---|---|
-| `TwitterClient` | 门面：`getTweet` / `getReplies` / `searchTweets` / `getUser` / `getUserTimeline` / `getListTweets` / `getSpace` / `run` |
-| `parseSearchTimeline` | 纯函数：`SearchTimeline` 响应 → 推文列表 + 下一页光标 |
-| `RettiwtPool` | 多 Key 轮询池（冷却 / 退避 / 负载均衡） |
-| `RettiwtConfig` / `DefaultRettiwtHeaders` | 运行时配置 |
-| `FetcherService` | 低层请求：`request(ResourceType, args)` |
-| `TwitterAPIClient` | 原始取数组合层（pool + 资源类型） |
-| `TweetEnrichmentService` | 批量富化助手 |
-| `ResourceType` / `TweetRepliesSortType` / `BaseType` | 资源与排序枚举 |
+| `TwitterClient` | Facade: `getTweet` / `getReplies` / `searchTweets` / `getUser` / `getUserTimeline` / `getListTweets` / `getSpace` / `run` |
+| `parseSearchTimeline` | Pure function: `SearchTimeline` response → tweet list + next-page cursor |
+| `RettiwtPool` | Multi-key round-robin pool (cooldown / backoff / load balancing) |
+| `RettiwtConfig` / `DefaultRettiwtHeaders` | Runtime configuration |
+| `FetcherService` | Low-level requests: `request(ResourceType, args)` |
+| `TwitterAPIClient` | Raw fetch composition layer (pool + resource types) |
+| `TweetEnrichmentService` | Bulk enrichment helper |
+| `ResourceType` / `TweetRepliesSortType` / `BaseType` | Resource and sort enums |
 
-### 传输与配置
+### Transport and configuration
 
-| 导出 | 说明 |
+| Export | Description |
 |---|---|
-| `HttpClient` / `HttpRequest` / `HttpResponse` | 中立传输契约 |
-| `createFetchHttpClient` / `defaultHttpClient` | fetch 实现 |
+| `HttpClient` / `HttpRequest` / `HttpResponse` | Neutral transport contract |
+| `createFetchHttpClient` / `defaultHttpClient` | fetch implementation |
 | `IRettiwtConfig` | `apiKey` / `timeout` / `headers` / `delay` / `maxRetries` / `httpClient` / `tidProvider` |
-| `TidProvider` / `TidContext` | 可注入的 transaction-id 提供者 |
-| `buildXShellHeaders` / `isUsableXDocument` / `X_SHELL_URLS` | 默认 transaction-id 实现的探测规则 |
+| `TidProvider` / `TidContext` | Injectable transaction-id provider |
+| `buildXShellHeaders` / `isUsableXDocument` / `X_SHELL_URLS` | Probing rules of the default transaction-id implementation |
 
-### 错误
+### Errors
 
-| 导出 | status |
+| Export | status |
 |---|---|
-| `TwitterApiError` | 任意，基类，带 `status` / `code` / `resource` |
+| `TwitterApiError` | Any; base class carrying `status` / `code` / `resource` |
 | `RateLimitError` | 429 |
 | `AuthError` | 401 / 403 |
 | `NotFoundError` | 404 |
 
-### 解析与富化
+### Parsing and enrichment
 
-| 导出 | 说明 |
+| Export | Description |
 |---|---|
-| `enrichTweet` | `RawTweet` → `EnrichedTweet`（转推展开、实体、卡片、投票、文章、媒体） |
-| `getEntities` / `getMediaAltEntities` / `serializeForAI` / `restoreEntities` / `applyAITranslations` | 实体切分与翻译载荷 |
-| `mapTwitterCard` / `mapMediaDetails` / `mapPollCard` / `mapArticle` / `mapSpaceDetails` / `attachSpaceDetails` | 卡片类映射 |
-| `resolveSpaceId` / `extractAudiospaceId` / `isSpaceUrl` / `resolveSpacePlaybackState` / `formatSpace*` | Space 判定与格式化 |
-| `resolveArticleId` / `resolveArticleLink` / `isArticleUrl` / `parseContentState` | Article 判定与块解析 |
-| `parseTrendingCard` | jetfuel payload → Trending 卡片 |
-| `organizeTweets` | 线程/评论区组织 |
-| `formatDate` | 时区格式化 |
-| `normalizeMediaUrl` / `normalizeProfileImageUrl` | twimg 媒体/头像 URL 归一化 |
+| `enrichTweet` | `RawTweet` → `EnrichedTweet` (retweet expansion, entities, cards, polls, articles, media) |
+| `getEntities` / `getMediaAltEntities` / `serializeForAI` / `restoreEntities` / `applyAITranslations` | Entity splitting and translation payloads |
+| `mapTwitterCard` / `mapMediaDetails` / `mapPollCard` / `mapArticle` / `mapSpaceDetails` / `attachSpaceDetails` | Card-style mappers |
+| `resolveSpaceId` / `extractAudiospaceId` / `isSpaceUrl` / `resolveSpacePlaybackState` / `formatSpace*` | Space detection and formatting |
+| `resolveArticleId` / `resolveArticleLink` / `isArticleUrl` / `parseContentState` | Article detection and block parsing |
+| `parseTrendingCard` | jetfuel payload → Trending card |
+| `organizeTweets` | Thread / reply-section organization |
+| `formatDate` | Time-zone formatting |
+| `normalizeMediaUrl` / `normalizeProfileImageUrl` | twimg media and avatar URL normalization |
 
-### 类型
+### Types
 
-`EnrichedTweet` / `EnrichedUser` / `RawTweet` / `RawUser` / `TweetData` / `Entity` / `MediaDetails` / `TweetPoll` / `TweetArticle` / `LinkPreviewCard` / `TrendingCardInfo` / `SpaceDetails` / `SpaceAvailability` 等，详见 `src/lib/types/enriched/`。
+`EnrichedTweet` / `EnrichedUser` / `RawTweet` / `RawUser` / `TweetData` / `Entity` / `MediaDetails` / `TweetPoll` / `TweetArticle` / `LinkPreviewCard` / `TrendingCardInfo` / `SpaceDetails` / `SpaceAvailability` and so on; see `src/lib/types/enriched/` for details.
 
-字段命名约定（0.1.0 起）：
+Field naming conventions (since 0.1.0):
 
-- 推文 id：`id`（不是 `id_str`）
-- 引用推文：`quotedTweet` / `quotedTweetId`
-- 转推事件 id：`retweetedOriginalId`
-- 内联媒体：`isInlineMedia`
-- 回复指向：`in_reply_to_status_id_str`
+- Tweet id: `id` (not `id_str`)
+- Quoted tweet: `quotedTweet` / `quotedTweetId`
+- Retweet event id: `retweetedOriginalId`
+- Inline media: `isInlineMedia`
+- Reply target: `in_reply_to_status_id_str`
 
-## node 导出面
+## node export surface
 
-| 导出 | 说明 |
+| Export | Description |
 |---|---|
-| `createNodeClient(options)` | 读 `TWEET_KEYS` / `http_proxy`，返回 `TwitterClient` |
-| `createProxyFetch(proxy)` | 基于 undici `ProxyAgent` 的 `HttpClient`（`http(s)://`） |
-| `readMediaFile(path)` | 读文件为 `Blob`，供 `tweet.upload` 使用 |
+| `createNodeClient(options)` | Reads `TWEET_KEYS` / `http_proxy` and returns a `TwitterClient` |
+| `createProxyFetch(proxy)` | `HttpClient` backed by the undici `ProxyAgent` (`http(s)://`) |
+| `readMediaFile(path)` | Reads a file as a `Blob` for use with `tweet.upload` |
 | `CreateNodeClientOptions` | `keys` / `cookie` / `proxy` / `timeout` / `maxRetries` / `headers` / `logger` |
 
-## cli 导出面
+## cli export surface
 
-| 导出 | 说明 |
+| Export | Description |
 |---|---|
-| `main` | citty 命令树根（`tweet` / `user` / `space` / `list` / `media`） |
-| `withErrorEnvelope(command)` | 递归包装 `run`，统一输出 JSON 错误信封 |
-| `formatCliError(error)` | 错误 → `{ event, code, message, ... }` |
-| `assertKnownFlags(root, argv)` | 未知参数校验（含最接近候选提示） |
-| `showCliUsage(command, parent?)` | 按终端显示宽度对齐的帮助渲染 |
+| `main` | citty command tree root (`tweet` / `user` / `space` / `list` / `media`) |
+| `withErrorEnvelope(command)` | Recursively wraps `run` and emits the unified JSON error envelope |
+| `formatCliError(error)` | Error → `{ event, code, message, ... }` |
+| `assertKnownFlags(root, argv)` | Unknown-argument validation (including closest-candidate suggestions) |
+| `showCliUsage(command, parent?)` | Help rendering aligned to the terminal width |
 
-bin `tweet-cli` 的行为与输出契约见 [cli.md](../guide/cli.md)。
+The behavior and output contract of the `tweet-cli` bin are documented in [cli.md](../guide/cli.md).
 
-## 契约
+## Contract
 
-- 只提供具名导出，没有默认导出。
-- 新增/删除导出属于公开契约变更：同步 `tests/exports.test.ts`、本文与 `CHANGELOG.md`。
-- `package.json#exports` 决定发布面，构建过程不得改写。
+- Named exports only; there is no default export.
+- Adding or removing an export is a public-contract change: update `tests/exports.test.ts`, this document and `CHANGELOG.md` together.
+- `package.json#exports` defines the published surface; the build must not rewrite it.

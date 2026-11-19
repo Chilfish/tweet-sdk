@@ -3,30 +3,34 @@ import type { IAudioSpace, ISpaceDetailsResponse } from '../types/raw/space/Deta
 import { formatDate } from './date'
 
 /**
- * Space（语音直播/录音回放）卡片纯逻辑。
+ * Pure logic for Space (live audio / recording replay) cards.
  *
- * 上游两段数据来源不同、结构不同，故这里只做「纯映射」，不做任何 IO：
- * - **卡片识别**：`extractAudiospaceId()` 读推文自带的 `card.name = '…:audiospace'`
- *   （其 `binding_values` 只有 `tweet_id` / `id` / `card_url` 等，无 title/图片，
- *   因此会被 `mapTwitterCard` 的最终校验丢弃——这正是 Space 卡片过去完全不显示的原因）。
- * - **元数据**：`mapSpaceDetails()` 把 `AudioSpaceById` 的 `audioSpace.metadata`
- *   映射为 {@link SpaceDetails}（标题/状态/起止时间/收听人数/主播）。
+ * The two upstream data sources differ in origin and shape, so this module only does
+ * "pure mapping" and no IO at all:
+ * - **Card detection**: `extractAudiospaceId()` reads the tweet's own
+ *   `card.name = '…:audiospace'` (its `binding_values` only holds `tweet_id` / `id` /
+ *   `card_url` etc., with no title/image, so it is dropped by the final check in
+ *   `mapTwitterCard` — which is exactly why Space cards used to never show up at all).
+ * - **Metadata**: `mapSpaceDetails()` maps `AudioSpaceById`'s `audioSpace.metadata`
+ *   into {@link SpaceDetails} (title/state/start and end time/listener count/host).
  *
- * 字段口径全部对齐官方卡片实测值（样本：Space `1yoKMPnjEbOxQ`，Ended + 可回放）。
- * 下沉为纯函数以便单测（Postmortem #002：纯逻辑必须脱离 React 才能验证）。
+ * All field semantics match the values observed on the official card (sample: Space
+ * `1yoKMPnjEbOxQ`, Ended + replayable).
+ * Sunk into pure functions to make it unit-testable (Postmortem #002: pure logic must be
+ * verifiable without React).
  */
 
-/** 官方 Space 卡片名形如 `3691233323:audiospace`（前缀为卡片模板号，随版本变动） */
+/** The official Space card name looks like `3691233323:audiospace` (the prefix is the card template number and changes between versions) */
 const AUDIOSPACE_CARD_SUFFIX = 'audiospace'
 
-/** 正文中的 Space 链接（`x.com/i/spaces/<id>` / `twitter.com/i/spaces/<id>`） */
+/** Space link in the body (`x.com/i/spaces/<id>` / `twitter.com/i/spaces/<id>`) */
 const SPACE_URL_RE = /^https?:\/\/(?:www\.|mobile\.)?(?:twitter|x)\.com\/i\/spaces\/([0-9A-Za-z]+)/
 
 /**
- * 从推文原始 `card` 中取出 Space id。
+ * Extracts the Space id from the tweet's raw `card`.
  *
- * @param cardData - 原始 `TweetResultByRestId` 响应里的 `card` 节点
- * @returns Space id；非 audiospace 卡或缺 `id` binding 时返回 null
+ * @param cardData - the `card` node from the raw `TweetResultByRestId` response
+ * @returns the Space id; null when the card is not an audiospace card or has no `id` binding
  */
 export function extractAudiospaceId(cardData: unknown): string | null {
   const legacy = (cardData as { legacy?: unknown })?.legacy ?? cardData
@@ -46,12 +50,12 @@ export function extractAudiospaceId(cardData: unknown): string | null {
     : null
 }
 
-/** 该 URL 是否指向 X Space 页面（正文据此避免与卡片重复展示同一个跳转） */
+/** Whether this URL points at an X Space page (the body uses this to avoid showing the same jump target twice alongside the card) */
 export function isSpaceUrl(url?: string | null): boolean {
   return typeof url === 'string' && SPACE_URL_RE.test(url)
 }
 
-/** 从 Space 链接里取出 Space id；不是 Space 链接时返回 null */
+/** Extracts the Space id from a Space link; returns null when it is not a Space link */
 export function extractSpaceIdFromUrl(url?: string | null): string | null {
   if (typeof url !== 'string')
     return null
@@ -59,12 +63,13 @@ export function extractSpaceIdFromUrl(url?: string | null): string | null {
 }
 
 /**
- * 解析推文对应的 Space id，**优先卡片、回退正文链接**。
+ * Resolves the Space id for a tweet, **preferring the card and falling back to a body link**.
  *
- * 两种推文都要能识别：
- * - 带 `…:audiospace` 卡片（常见形态，id 在 binding 里）
- * - **无卡片**、只在正文里贴了 `x.com/i/spaces/…` 链接（实测样本：推文
- *   `1871586443388420240` 完全没有 card，只有一个 url 实体）——这类过去会被整条漏掉
+ * Both kinds of tweet must be recognized:
+ * - one carrying a `…:audiospace` card (the common shape; the id is in a binding)
+ * - one **without a card** that only pastes an `x.com/i/spaces/…` link in the body
+ *   (observed sample: tweet `1871586443388420240` has no card at all, only a url entity)
+ *   — these used to be missed entirely
  */
 export function resolveSpaceId(
   cardData: unknown,
@@ -74,7 +79,7 @@ export function resolveSpaceId(
   if (fromCard)
     return fromCard
 
-  // 实体是联合类型（text/hashtag/… 多数没有 href），故按 unknown 收进来再窄化
+  // Entities are a union type (text/hashtag/… mostly have no href), so take them in as unknown and narrow afterwards
   for (const entity of entities ?? []) {
     const id = extractSpaceIdFromUrl((entity as { href?: string } | null | undefined)?.href)
     if (id)
@@ -84,7 +89,7 @@ export function resolveSpaceId(
   return null
 }
 
-/** 上游时间戳混用秒/毫秒，`< 1e12` 视为秒；空值/非法值统一为 null */
+/** Upstream timestamps mix seconds and milliseconds, so `< 1e12` is treated as seconds; empty/invalid values become null */
 function toMillis(value: unknown): number | null {
   if (value === null || value === undefined || value === '')
     return null
@@ -103,10 +108,10 @@ function asRecord(value: unknown): Record<string, any> | undefined {
 }
 
 /**
- * 由 `state` + `is_space_available_for_replay` 推导卡片可播放状态。
+ * Derives the card's playable state from `state` + `is_space_available_for_replay`.
  *
- * 关键分支是「已结束但未开启回放」：此时**没有**录音可放，绝不能给播放入口
- * （官方卡片同样不给）。
+ * The key branch is "ended but replay not enabled": there is **no** recording to play
+ * then, so we must never offer a playback entry point (the official card does not either).
  */
 function resolveAvailability(state: string, isReplayAvailable: boolean): SpaceAvailability {
   const normalized = state.toLowerCase()
@@ -114,7 +119,7 @@ function resolveAvailability(state: string, isReplayAvailable: boolean): SpaceAv
     return 'live'
   if (normalized === 'notstarted')
     return 'upcoming'
-  // Ended / TimedOut / 未知一律按「已结束」处理，能否播由回放开关决定
+  // Ended / TimedOut / unknown are all treated as "ended"; playability is decided by the replay flag
   return isReplayAvailable ? 'replayable' : 'no-replay'
 }
 
@@ -128,16 +133,19 @@ const EMPTY_HOST: SpaceHost = {
 }
 
 /**
- * 把 `AudioSpaceById` 的 `data.audioSpace` 节点映射为卡片所需的 {@link SpaceDetails}。
+ * Maps the `data.audioSpace` node of `AudioSpaceById` into the {@link SpaceDetails} the card needs.
  *
- * @param spaceId - 卡片 binding 里的 Space id（墓碑态也要靠它构造 URL，故必须先于元数据拿到）
- * @param audioSpace - GraphQL `data.audioSpace` 节点
- * @param tweetAuthor - 推文作者（可选）。当作者就是主播时，用推文侧更完整的用户对象
- *   补齐认证信息与头像——`AudioSpaceById` 的 `creator_results` 是精简对象，缺
- *   `is_blue_verified` / `verified_type`，只靠它渲染会丢掉官方卡片上的认证徽标。
- * @returns `spaceId` 为空时返回 null；**上游无 metadata 时返回 `unavailable` 墓碑态**
- *   ——已删除 / 不可访问的 Space 也要有 UI 提示，而不是静默什么都不显示
- *   （实测这类 id 的响应是 `{ is_subscribed: false }`，没有 metadata）
+ * @param spaceId - the Space id from the card binding (a tombstone state also needs it to build the URL, so it must be available before the metadata)
+ * @param audioSpace - the GraphQL `data.audioSpace` node
+ * @param tweetAuthor - the tweet author (optional). When the author is the host, use the
+ *   fuller user object from the tweet side to fill in verification info and the avatar —
+ *   `creator_results` in `AudioSpaceById` is a slim object missing `is_blue_verified` /
+ *   `verified_type`, so rendering from it alone loses the verification badge shown on the
+ *   official card.
+ * @returns null when `spaceId` is empty; **an `unavailable` tombstone when upstream has no
+ *   metadata** — a deleted / inaccessible Space still needs a UI hint instead of silently
+ *   showing nothing (observed: the response for such ids is `{ is_subscribed: false }` with
+ *   no metadata)
  */
 export function mapSpaceDetails(
   spaceId: string,
@@ -195,7 +203,7 @@ export function mapSpaceDetails(
   }
 
   if (tweetAuthor?.screen_name && tweetAuthor.screen_name === host.screen_name) {
-    // 上游会省略 `verified` 字段（仅在真为 true 时出现），故一律用 `=== true` 收敛为布尔
+    // Upstream omits the `verified` field (it only appears when actually true), so always narrow with `=== true`
     host.verified = host.verified || tweetAuthor.verified === true
     host.is_blue_verified = host.is_blue_verified || tweetAuthor.is_blue_verified === true
     host.verified_type ??= tweetAuthor.verified_type
@@ -231,7 +239,7 @@ export function mapSpaceDetails(
   }
 }
 
-/** 场次时长 → 官方口径 `42:40`（≥1 小时为 `1:02:03`）；无效时长返回空串 */
+/** Session duration → official format `42:40` (`1:02:03` for ≥1 hour); returns an empty string for an invalid duration */
 export function formatSpaceDuration(ms?: number | null): string {
   if (ms === null || ms === undefined || !Number.isFinite(ms) || ms <= 0)
     return ''
@@ -247,7 +255,22 @@ export function formatSpaceDuration(ms?: number | null): string {
     : `${minutes}:${pad(seconds)}`
 }
 
-/** 场次日期 → 官方口径 `9月17日`（时区口径复用 formatDate 的 Asia/Shanghai，不补前导零） */
+const MONTH_NAMES = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+]
+
+/** Session date → `Sep 17` (English month name, no leading zero on the day) */
 export function formatSpaceDate(ms?: number | null): string {
   if (ms === null || ms === undefined || !Number.isFinite(ms) || ms <= 0)
     return ''
@@ -256,17 +279,20 @@ export function formatSpaceDate(ms?: number | null): string {
   if (!month || !day)
     return ''
 
-  return `${Number(month)}月${Number(day)}日`
+  const monthName = MONTH_NAMES[Number(month) - 1]
+  return monthName
+    ? `${monthName} ${Number(day)}`
+    : `${month}-${day}`
 }
 
-/** 收听/回放人数 → 千分位 `2,478` */
+/** Listener/replay count → thousands-separated `2,478` */
 export function formatSpaceListeners(count: number): string {
   if (!Number.isFinite(count) || count <= 0)
     return '0'
   return count.toLocaleString('en-US')
 }
 
-/** 除墓碑态外的可播放状态（卡片行动区只在这四种里选） */
+/** Playable states other than the tombstone (the card action area only picks among these four) */
 export type SpacePlaybackState = Exclude<SpaceAvailability, 'unavailable'>
 
 const SPACE_PLAYBACK_STATES: Record<SpacePlaybackState, true> = {
@@ -277,12 +303,13 @@ const SPACE_PLAYBACK_STATES: Record<SpacePlaybackState, true> = {
 }
 
 /**
- * 解析卡片行动区状态，**兼容旧缓存**。
+ * Resolves the card action area's state, **staying compatible with old caches**.
  *
- * `availability` 是后加字段：改动前落地的 `space`（memory LRU / 本地文件 / DB jsonContent）
- * 没有它，直接查表会拿到 `undefined` 并在渲染时崩（实测于 dev）。故此处按早期就存在的
- * `isReplayAvailable` 回退推导；再退化（字段也缺失）时保守取 `no-replay`——
- * 宁可不说「可播放」，也不给一个播不了的承诺。
+ * `availability` is a later addition: `space` objects persisted before that change
+ * (memory LRU / local files / DB jsonContent) do not have it, and a direct table lookup
+ * would yield `undefined` and crash at render time (observed in dev). So derive it from
+ * the earlier `isReplayAvailable` as a fallback; if that is missing too, conservatively
+ * use `no-replay` — better not to say "playable" than to promise something that cannot play.
  */
 export function resolveSpacePlaybackState(
   space: Pick<SpaceDetails, 'availability' | 'isReplayAvailable'>,

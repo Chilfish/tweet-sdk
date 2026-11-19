@@ -1,20 +1,22 @@
 /**
- * 媒体 URL 归一化（app/lib/media-url.ts）
+ * Media URL normalization (app/lib/media-url.ts)
  *
- * 将 twimg 媒体图片链接从 query 形态 `?name=<size>&format=<ext>`（或
- * `?format=<ext>&name=<size>`）统一为路径形态 `<slug>.<ext>`：
+ * Normalizes twimg media image links from the query form `?name=<size>&format=<ext>`
+ * (or `?format=<ext>&name=<size>`) into the path form `<slug>.<ext>`:
  *
  *   https://pbs.twimg.com/media/HPxZhM0aQAAZxz3?format=jpg&name=small
  *     → https://pbs.twimg.com/media/HPxZhM0aQAAZxz3.jpg
  *
- * 例外：`/card_img/<id>/<slug>`（链接卡片图）不支持路径形态 ——
- * `/card_img/2096230549069438976/ZRBr6uOS.jpg` 会 404，只有
- * `?format=<ext>&name=<size>` 的 query 形态可达。故该路径保留 query，
- * 缺失时补默认 `format=jpg&name=large`。
+ * Exception: `/card_img/<id>/<slug>` (link card image) does not support the path
+ * form — `/card_img/2096230549069438976/ZRBr6uOS.jpg` returns 404, and only the
+ * query form `?format=<ext>&name=<size>` is reachable. This path therefore keeps
+ * the query and fills in the defaults `format=jpg&name=large` when missing.
  *
- * 已带扩展名的 URL（如官方原始图 `.../HPxZhM0aQAAZxz3.jpg`）原样保留，仅清理
- * `format` / `name` 两个查询参数。所有媒体链接消费方（getMediaUrl / buildMediaUrl /
- * 卡片渲染 / Markdown 导出）共用本函数，避免第六套媒体 URL 逻辑（Postmortem #005）。
+ * URLs that already carry an extension (such as the official original image
+ * `.../HPxZhM0aQAAZxz3.jpg`) are kept as-is; only the `format` and `name` query
+ * parameters are stripped. Every media link consumer (getMediaUrl / buildMediaUrl /
+ * card rendering / Markdown export) shares this function, avoiding a sixth set of
+ * media URL logic (Postmortem #005).
  */
 
 const IMAGE_EXT_RE = /\.(?:jpe?g|png|webp|gif|avif|heic|heif)$/i
@@ -25,7 +27,7 @@ export function normalizeMediaUrl(raw: string): string {
     return raw
   try {
     const url = new URL(raw)
-    // card_img 只能走 query 形态：把 format 并入路径会 404，故保留 query 并补默认值
+    // card_img only works in query form: folding format into the path yields 404, so keep the query and fill in defaults
     if (CARD_IMG_PATH_RE.test(url.pathname)) {
       if (!url.searchParams.has('format'))
         url.searchParams.set('format', 'jpg')
@@ -33,7 +35,7 @@ export function normalizeMediaUrl(raw: string): string {
         url.searchParams.set('name', 'large')
       return url.toString()
     }
-    // 路径已带图片扩展名 → 保留；否则把 format 查询参数并入路径
+    // Path already ends with an image extension → keep it; otherwise fold the format query param into the path
     if (!IMAGE_EXT_RE.test(url.pathname)) {
       const format = url.searchParams.get('format')
       if (format)
@@ -49,10 +51,12 @@ export function normalizeMediaUrl(raw: string): string {
 }
 
 /**
- * 头像 URL 去掉 X 的尺寸后缀（`_normal` / `_bigger` / `_mini` / `_400x400`），
- * 取原始图：`.../hXskVj9F_normal.png` → `.../hXskVj9F.png`。
+ * Strips X's size suffix (`_normal` / `_bigger` / `_mini` / `_400x400`) from an
+ * avatar URL to get the original image:
+ * `.../hXskVj9F_normal.png` → `.../hXskVj9F.png`.
  *
- * 非 pbs.twimg.com 头像（IG CDN 等）没有该后缀，原样返回。
+ * Avatars not hosted on pbs.twimg.com (IG CDN, etc.) have no such suffix and are
+ * returned as-is.
  */
 const PROFILE_SIZE_SUFFIX_RE = /_(?:mini|normal|bigger|400x400|200x200)(?=\.(?:jpe?g|png|webp|gif)(?:[?#]|$))/i
 const TWIMG_HOST_RE = /(?:^|\.)twimg\.com$/i

@@ -7,13 +7,13 @@ import type {
 } from '../types/raw/tweet/Details'
 
 /**
- * X Article 的 Draft.js `content_state` → 语义化块文档（纯函数，无 IO）。
+ * X Article's Draft.js `content_state` → semantic block document (pure function, no IO).
  *
- * 上游实测形态（样例见 `test/fixtures/articles/*.json`）：
- * - `blocks[]`：`{ key, text, type, data, entityRanges[], inlineStyleRanges[] }`
- * - `entityMap`：`[{ key, value: { type, data } }]`；`type ∈ LINK | MARKDOWN | MEDIA | DIVIDER | TWEET`
- * - 块内 @mention / #hashtag 走 `block.data.mentions/hashtags` 的 `fromIndex/toIndex` span
- * - 图片：atomic 块 → `MEDIA` 实体 `data.mediaItems[].mediaId` → `media_entities[]`（按 media_id 索引）
+ * Observed upstream shape (samples in `test/fixtures/articles/*.json`):
+ * - `blocks[]`: `{ key, text, type, data, entityRanges[], inlineStyleRanges[] }`
+ * - `entityMap`: `[{ key, value: { type, data } }]`; `type ∈ LINK | MARKDOWN | MEDIA | DIVIDER | TWEET`
+ * - in-block @mention / #hashtag spans come from `block.data.mentions/hashtags` as `fromIndex/toIndex`
+ * - images: atomic block → `MEDIA` entity `data.mediaItems[].mediaId` → `media_entities[]` (indexed by media_id)
  */
 
 interface SpecialSpan {
@@ -41,7 +41,7 @@ function toStyle(style?: string): ArticleInlineStyle | null {
   }
 }
 
-/** 兼容 `[{key,value}]` 与 `Record<key,value>` 两种 entityMap 形态 */
+/** Handles both entityMap shapes: `[{key,value}]` and `Record<key,value>` */
 export function normalizeEntityMap(
   entityMap?: RawArticleContentState['entityMap'],
 ): Map<string, RawArticleEntityValue> {
@@ -64,7 +64,7 @@ export function normalizeEntityMap(
   return map
 }
 
-/** 原始媒体节点 → {@link ArticleMedia}；缺 id/url 时返回 null */
+/** Raw media node → {@link ArticleMedia}; returns null when id/url is missing */
 export function mediaFromRaw(raw?: RawArticleMedia | null): ArticleMedia | null {
   const url = raw?.media_info?.original_img_url
   const id = raw?.media_id ?? raw?.id
@@ -85,7 +85,7 @@ function mediaIdFromEntity(value: RawArticleEntityValue): string | undefined {
   return (first?.mediaId as string | undefined) ?? (first?.media_id as string | undefined)
 }
 
-/** 依据行内样式区间，取出恰好覆盖 [start, end) 的样式集合 */
+/** Collects the styles that exactly cover [start, end) from the inline style ranges */
 function stylesInRange(
   styleRanges: Array<{ start: number, end: number, style: ArticleInlineStyle }>,
   start: number,
@@ -102,11 +102,13 @@ function stylesInRange(
 }
 
 /**
- * 块文本 → 行内 run[]（LINK 实体 + mention/hashtag span + 行内样式）。
+ * Block text → inline run[] (LINK entities + mention/hashtag spans + inline styles).
  *
- * 行内样式区间（Bold/Italic）与实体 span **一样是切分点**：Draft.js 里一段文本的
- * run 由「实体边界 ∩ 样式边界」共同决定。若只按实体切分，一个只覆盖前半段的 Bold
- * 区间会被整段应用（实测：`{offset:0,length:15,style:Bold}` 的段落整段渲染成粗体）。
+ * Inline style ranges (Bold/Italic) are **split points just like** entity spans: in
+ * Draft.js the runs of a piece of text are determined by "entity boundaries ∩ style
+ * boundaries". Splitting on entities alone applies a Bold range that only covers the
+ * first half to the whole segment (observed: a paragraph with
+ * `{offset:0,length:15,style:Bold}` rendered entirely bold).
  */
 function buildRuns(block: RawArticleBlock, entityMap: Map<string, RawArticleEntityValue>): ArticleRun[] {
   const text = block.text ?? ''
@@ -181,7 +183,7 @@ function buildRuns(block: RawArticleBlock, entityMap: Map<string, RawArticleEnti
     .filter((range): range is { start: number, end: number, style: ArticleInlineStyle } =>
       Boolean(range.style) && range.end > range.start)
 
-  // 切分点 = 实体边界 ∪ 样式边界（含首尾）
+  // Split points = entity boundaries ∪ style boundaries (including both ends)
   const points = new Set<number>([0, text.length])
   for (const span of spans) {
     points.add(span.start)
@@ -268,7 +270,7 @@ function parseBlock(
     return parseAtomicBlock(key, block, entityMap, mediaIndex)
 
   const runs = buildRuns(block, entityMap)
-  // 空块（无文本、无 run）不产出，避免渲染出空段落
+  // Empty blocks (no text, no runs) are dropped so we never render an empty paragraph
   if (runs.length === 0 || runs.every(run => !run.text.trim()))
     return null
 
@@ -295,14 +297,15 @@ function parseBlock(
       }
     case 'blockquote':
       return { key, type: 'quote', runs }
-    // unstyled 及未知块类型统一按段落渲染，保证不丢内容
+    // unstyled and unknown block types all render as paragraphs so content is never dropped
     default:
       return { key, type: 'paragraph', runs }
   }
 }
 
 /**
- * `content_state` → 块文档。无有效块时返回空数组（调用方据此回退 `plain_text`）。
+ * `content_state` → block document. Returns an empty array when there are no valid
+ * blocks (callers fall back to `plain_text` on that basis).
  */
 export function parseContentState(
   contentState?: RawArticleContentState | null,
@@ -326,7 +329,7 @@ export function parseContentState(
     .filter((block): block is ArticleBlock => block !== null)
 }
 
-/** 文章块里的内嵌推文 id（去重、保序）——阅读页据此并行取回真实推文 */
+/** Embedded tweet ids in the article blocks (deduped, order preserved) — the reader page fetches the real tweets in parallel from these */
 export function collectEmbeddedTweetIds(blocks: ArticleBlock[]): string[] {
   const ids: string[] = []
   for (const block of blocks) {
@@ -336,7 +339,7 @@ export function collectEmbeddedTweetIds(blocks: ArticleBlock[]): string[] {
   return ids
 }
 
-/** 块文档 → 纯文本（`plain_text` 缺失时的兜底正文） */
+/** Block document → plain text (the fallback body when `plain_text` is absent) */
 export function derivePlainText(blocks: ArticleBlock[]): string {
   return blocks
     .map((block) => {

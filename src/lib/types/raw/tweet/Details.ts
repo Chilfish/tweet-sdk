@@ -33,16 +33,17 @@ interface Result {
   quoted_status_result?: TweetResult
   card?: any
   /**
-   * X Article（长文）附件。`withArticleRichContentState` field toggle 开启时
-   * `article_results.result.content_state` 带 Draft.js 块文档；`withArticlePlainText`
-   * 只带 `plain_text` 纯文本。两者都取可互为兜底。
+   * X Article (long-form) attachment. With the `withArticleRichContentState` field toggle
+   * on, `article_results.result.content_state` carries the Draft.js block document;
+   * `withArticlePlainText` only carries the `plain_text` body. Fetching both lets each
+   * serve as the other's fallback.
    */
   article?: {
     article_results?: {
       result?: RawArticleResult
     }
   }
-  /** JetFuel 附件（responsive_web_jetfuel_frame 开启时返回）：官方渲染卡全量数据 */
+  /** JetFuel attachment (returned when responsive_web_jetfuel_frame is on): the full data behind the official rendered card */
   jetfuel_attachment?: {
     height: number
     payload: string
@@ -339,9 +340,9 @@ export interface Variant {
   bitrate?: number
 }
 
-// ─── X Article（长文）原始节点 ────────────────────────────────
+// ─── X Article (long-form) raw nodes ────────────────────────
 
-/** 文章内嵌媒体（`media_entities[]` / `cover_media`），字段随上游可选 */
+/** Media embedded in an article (`media_entities[]` / `cover_media`); fields are optional and vary by upstream */
 export interface RawArticleMedia {
   id?: string
   media_id?: string
@@ -354,21 +355,21 @@ export interface RawArticleMedia {
   }
 }
 
-/** Draft.js 行内样式区间（`style` 实测为 `Bold` / `Italic` / `Strikethrough`） */
+/** Draft.js inline style range (`style` is observed as `Bold` / `Italic` / `Strikethrough`) */
 export interface RawArticleInlineStyleRange {
   offset: number
   length: number
   style?: string
 }
 
-/** Draft.js 实体引用区间（`key` 指向 `entityMap`） */
+/** Draft.js entity reference range (`key` points into `entityMap`) */
 export interface RawArticleEntityRange {
   key: number | string
   offset: number
   length: number
 }
 
-/** 块级 `data` 里的 @mention / #hashtag span（越过 entityMap 直接给偏移） */
+/** @mention / #hashtag span inside a block's `data` (offsets given directly, bypassing entityMap) */
 export interface RawArticleSpan {
   fromIndex?: number
   toIndex?: number
@@ -395,7 +396,7 @@ export interface RawArticleEntityValue {
     url?: string
     markdown?: string
     tweetId?: string
-    /** 写入用 snake_case 与读取用 camelCase 都可能出现 */
+    /** Both the snake_case used for writes and the camelCase used for reads may appear */
     mediaItems?: Array<{ mediaId?: string, localMediaId?: string, mediaCategory?: string }>
     media_items?: Array<{ media_id?: string, local_media_id?: string, media_category?: string }>
     caption?: string
@@ -409,7 +410,7 @@ export interface RawArticleEntity {
 }
 
 export interface RawArticleContentState {
-  /** 数组形态；也见过以 key 为键的 Record 形态 */
+  /** Array form; a Record form keyed by key has also been seen */
   entityMap?: RawArticleEntity[] | Record<string, RawArticleEntityValue>
   blocks?: RawArticleBlock[]
 }

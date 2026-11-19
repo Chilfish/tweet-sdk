@@ -7,17 +7,17 @@ import { clientArg, createClient } from '../shared'
 export const spaceGet = defineCommand({
   meta: {
     name: 'get',
-    description: '获取 Space 元数据（已结束场次同样返回；已删除时为 unavailable）',
+    description: 'Fetch Space metadata (ended spaces are still returned; deleted ones report unavailable)',
   },
   args: {
     id: {
       type: 'positional',
-      description: 'Space ID（x.com/i/spaces/<id> 里的 id）',
+      description: 'Space ID (the id in x.com/i/spaces/<id>)',
       required: true,
     },
     raw: {
       type: 'boolean',
-      description: '输出上游 audioSpace 原始节点',
+      description: 'Output the raw upstream audioSpace node',
     },
     ...outputFormatArg,
     ...clientArg,
@@ -37,7 +37,7 @@ export const spaceGet = defineCommand({
     const space = mapSpaceDetails(args.id, audioSpace)
     if (!space) {
       print(null, {
-        markdown: () => `Space ${args.id} 不可用`,
+        markdown: () => `Space ${args.id} is unavailable`,
       })
       return
     }

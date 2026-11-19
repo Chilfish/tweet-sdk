@@ -8,7 +8,7 @@ updates:
       day: monday
     open-pull-requests-limit: 5
     ignore:
-      # typescript-eslint 尚不支持 TS 7，等其发布支持后再放开。
+      # typescript-eslint does not support TS 7 yet; lift this cap once it does.
       - dependency-name: typescript
         versions: ['>=7']
     groups:

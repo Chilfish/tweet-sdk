@@ -1,16 +1,16 @@
-# 快速开始
+# Getting Started
 
-## 环境要求
+## Requirements
 
-| 工具 | 版本 | 用途 |
+| Tool | Version | Purpose |
 |---|---|---|
-| Bun | 1.4.4+ | 安装依赖、运行脚本、本地开发 |
-| Node.js | 20+ | 运行时（`engines.node`）；`./node` 入口 |
+| Bun | 1.4.4+ | Install dependencies, run scripts, local development |
+| Node.js | 20+ | Runtime (`engines.node`); `./node` entry |
 | Git | 2.4+ | lefthook hooks |
 
-Bun 版本锁定在 `package.json#packageManager`，CI 使用同版本。
+The Bun version is pinned in `package.json#packageManager`, and CI uses the same version.
 
-## 初始化
+## Setup
 
 ```bash
 git clone git@github.com:Chilfish/tweet-sdk.git
@@ -18,9 +18,9 @@ cd tweet-sdk
 bun install
 ```
 
-`bun install` 会自动执行 `prepare: lefthook install`，安装 Git hooks。
+`bun install` automatically runs `prepare: lefthook install`, which installs the Git hooks.
 
-## 消费者用法
+## Using the package as a consumer
 
 ```bash
 bun add @chilfish/tweet
@@ -35,7 +35,7 @@ const tweet = enrichTweet(await client.getTweet('<tweet-id>'))
 console.log(tweet?.text)
 ```
 
-Node 下的便捷工厂与文件上传：
+Convenience factory and file upload on Node:
 
 ```ts
 import { createNodeClient, readMediaFile } from '@chilfish/tweet/node'
@@ -44,17 +44,17 @@ const client = createNodeClient()
 const media = await readMediaFile('photo.jpg')
 ```
 
-## 第一条命令
+## Your first command
 
 ```bash
 bun run check
 ```
 
-它依次执行 typecheck、lint、测试覆盖率、构建、产物校验。全绿即表示可以发布。
+It runs typecheck, lint, test coverage, build and artifact verification in that order. All green means the package is ready to publish.
 
-## 下一步
+## Next steps
 
-- 日常命令与发布流程：[usage.md](./usage.md)
-- 公开 API：[api.md](../reference/api.md)
-- 架构与目录约定：[architecture.md](../engineering/architecture.md)
-- 代码风格：[code-style.md](../engineering/code-style.md)
+- Day-to-day commands and the release process: [usage.md](./usage.md)
+- Public API: [api.md](../reference/api.md)
+- Architecture and directory conventions: [architecture.md](../engineering/architecture.md)
+- Code style: [code-style.md](../engineering/code-style.md)

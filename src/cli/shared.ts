@@ -8,45 +8,45 @@ import { getEnvFilePath, readEnvFile } from './env'
 import { CliError } from './error'
 import { parsePositiveInt } from './parseArgs'
 
-/** 所有查询命令共用的连接参数。 */
+/** Connection arguments shared by every query command. */
 export const clientArg = {
   'keys': {
     type: 'string',
-    description: 'API key 列表（逗号分隔，base64 cookie；默认读 --env-file 的 TWEET_KEYS）',
+    description: 'API key list (comma-separated base64 cookies; defaults to TWEET_KEYS from --env-file)',
     alias: 'k',
   },
   'cookie': {
     type: 'string',
-    description: '原始 Cookie 串（k=v; k=v；显式覆盖 keys，自动 base64 编码）',
+    description: 'Raw cookie string (k=v; k=v; overrides keys and is base64-encoded automatically)',
   },
   'env-file': {
     type: 'string',
-    description: '环境文件路径（默认 <pwd>/.env，读取 TWEET_KEYS / http_proxy）',
+    description: 'Env file path (default <pwd>/.env; reads TWEET_KEYS / http_proxy)',
   },
   'proxy': {
     type: 'string',
-    description: 'HTTP(S) 代理地址（默认读 --env-file 的 http_proxy / HTTPS_PROXY）',
+    description: 'HTTP(S) proxy URL (defaults to http_proxy / HTTPS_PROXY from --env-file)',
     alias: 'p',
   },
   'timeout': {
     type: 'string',
-    description: '单次请求超时 ms（默认交给运行时 / 上游）',
+    description: 'Per-request timeout in ms (defaults to the runtime / upstream)',
   },
   'verbose': {
     type: 'boolean',
-    description: '把 pool 轮换 / 解析回退事件以 JSON 行输出到 stderr',
+    description: 'Emit pool rotation / parse fallback events as JSON lines on stderr',
     alias: 'v',
   },
 } as const
 
-/** `--keys`、`TWEET_KEYS` 都是逗号分隔；空白项丢弃。 */
+/** `--keys` and `TWEET_KEYS` are both comma-separated; blank entries are dropped. */
 function splitKeys(value: string | undefined): string[] {
   if (!value)
     return []
   return value.split(',').map(key => key.trim()).filter(Boolean)
 }
 
-/** `--verbose` 时使用的 pool logger：单行 JSON，便于采集。 */
+/** Pool logger used with `--verbose`: one JSON line per event, easy to collect. */
 function verboseLogger(args: Record<string, unknown>): RettiwtPoolLogger | undefined {
   if (args.verbose !== true)
     return undefined
@@ -58,11 +58,11 @@ function verboseLogger(args: Record<string, unknown>): RettiwtPoolLogger | undef
 }
 
 /**
- * 按 CLI 参数构造客户端。
+ * Build a client from CLI arguments.
  *
- * 优先级：
- * - keys：`--keys` → `--cookie`（原始 Cookie 编码）→ `--env-file` 的 `TWEET_KEYS`
- * - proxy：`--proxy` → `--env-file` 的 `http_proxy` / `HTTPS_PROXY`
+ * Precedence:
+ * - keys: `--keys` → `--cookie` (raw cookie, encoded) → `TWEET_KEYS` from `--env-file`
+ * - proxy: `--proxy` → `http_proxy` / `HTTPS_PROXY` from `--env-file`
  */
 export function createClient(args: Record<string, unknown>): TwitterClient {
   const env = readEnvFile(getEnvFilePath(args['env-file']))
@@ -94,9 +94,9 @@ export function createClient(args: Record<string, unknown>): TwitterClient {
 }
 
 /**
- * 把任意错误转换成 CLI 的 JSON 错误信封（stderr）。
+ * Convert any error into the CLI's JSON error envelope (stderr).
  *
- * 核心错误额外携带 `status` / `code`，便于脚本在不解自然语言的情况下决定重试。
+ * Core errors additionally carry `status` / `code`, so scripts can decide whether to retry without parsing prose.
  */
 export function formatCliError(error: unknown): Record<string, unknown> {
   if (error instanceof CliError) {
@@ -137,10 +137,10 @@ export function formatCliError(error: unknown): Record<string, unknown> {
 }
 
 /**
- * 富化原始推文，并附带被引用推文。
+ * Enrich a raw tweet and attach the quoted tweet.
  *
- * 与应用的 `enrichWithQuoted` 等价；这里不自动请求 Space 元数据，避免
- * 查询命令隐式多打一次上游。
+ * Equivalent to the app's `enrichWithQuoted`; Space metadata is not requested automatically here, so
+ * query commands don't silently make an extra upstream call.
  */
 export function enrich(raw: RawTweet, logger?: RettiwtPoolLogger): EnrichedTweet | null {
   const tweet = enrichTweet(raw, undefined, logger && { warn: logger.warn })

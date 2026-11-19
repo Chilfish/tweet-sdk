@@ -1,63 +1,63 @@
-# 使用指南
+# Usage Guide
 
-## 日常命令
+## Day-to-day commands
 
-| 命令 | 作用 |
+| Command | Purpose |
 |---|---|
-| `bun run dev` | tsdown watch，增量构建到 `dist/` |
-| `bun run build` | 一次性构建 ESM + CJS + 类型声明 |
+| `bun run dev` | tsdown watch, incremental builds into `dist/` |
+| `bun run build` | One-off build of ESM + CJS + type declarations |
 | `bun run typecheck` | `tsc --noEmit` |
 | `bun run lint` | `eslint . --fix` |
-| `bun run lint:check` | 只检查不修复（CI 用） |
-| `bun run test` | 单次运行全部测试 |
-| `bun run test:watch` | watch 模式 |
-| `bun run test:coverage` | 带 v8 覆盖率 |
-| `bun run example` | 运行 `examples/basic.ts` |
-| `bun run check` | 全量门禁 |
-| `bun run check:docs` | 校验文档链接与索引登记 |
+| `bun run lint:check` | Check only, no fixes (used in CI) |
+| `bun run test` | Run the whole test suite once |
+| `bun run test:watch` | Watch mode |
+| `bun run test:coverage` | With v8 coverage |
+| `bun run example` | Run `examples/basic.ts` |
+| `bun run check` | Full gate |
+| `bun run check:docs` | Validate documentation links and index registration |
 
-## 写代码
+## Writing code
 
 ```bash
-# 新增一个解析模块
+# Add a new parsing module
 src/lib/parse/example.ts
 tests/parse/example.test.ts
 ```
 
-- core 模块放 `src/lib/`，Node 能力放 `src/node/`；`src/index.ts` / `src/node.ts` 只做 re-export。
-- 解析模块保持纯函数：不访问网络、不读文件，上游数据由调用方注入。
-- 类型导入使用 `import type`。
-- 新增导出要同步 `tests/exports.test.ts`、[api.md](../reference/api.md) 与 CHANGELOG。
-- 新增子路径入口要同步 `tsdown.config.ts#entry` 与 `package.json#exports`。
+- core modules live in `src/lib/`, Node capabilities live in `src/node/`; `src/index.ts` / `src/node.ts` only re-export.
+- Parsing modules stay pure functions: no network access, no file reads; upstream data is injected by the caller.
+- Use `import type` for type imports.
+- New exports must be mirrored in `tests/exports.test.ts`, [api.md](../reference/api.md) and the CHANGELOG.
+- New subpath entries must be mirrored in `tsdown.config.ts#entry` and `package.json#exports`.
 
-## 提交
+## Committing
 
-pre-commit 会对暂存文件跑 `eslint --fix`。提交信息格式见 [git-workflow](../engineering/git-workflow.md)：
+pre-commit runs `eslint --fix` on staged files. For the commit message format see [git-workflow](../engineering/git-workflow.md):
 
 ```bash
-git commit -m "feat(parser): 支持多值参数"
+git commit -m "feat(parser): support multi-value arguments"
 ```
 
-pre-push 会跑 `bun run build`，构建失败则阻止推送。
+pre-push runs `bun run build`; if the build fails the push is blocked.
 
-## 发布
+## Releasing
 
 ```bash
-# 1. 写 CHANGELOG 的 ## Unreleased
-# 2. 一键发版
+# 1. Write the ## Unreleased section of the CHANGELOG
+# 2. Release with a single command
 bun run release
 ```
 
-完整流程与认证配置见 [build-and-release](../engineering/build-and-release.md)，逐项检查见 [release-checklist](../engineering/release-checklist.md)。
+For the full process and authentication setup see [build-and-release](../engineering/build-and-release.md); for the item-by-item checks see [release-checklist](../engineering/release-checklist.md).
 
-## 排障
+## Troubleshooting
 
-| 现象 | 处理 |
+| Symptom | Fix |
 |---|---|
-| `bun install --frozen-lockfile` 失败 | 本地执行 `bun install` 更新 `bun.lock` 后提交 |
-| pre-commit 没有执行 | `bunx lefthook install` 重新安装 hooks |
-| `check-docs` 报未登记 | 在 `docs/README.md` 索引中补一行 |
-| 发布 job 报版本不一致 | tag 与 `package.json#version` 不同，重打 tag |
-| 产物缺少文件 | 先 `bun run build`，再 `bun run verify:package` |
-| `./node` 解析不到 `node.d.ts` | 构建产物缺失，重新 `bun run build` 并确认 `entry` 含 `src/node.ts` |
-| core 构建出现 `node:` 导入 | 平台能力被放进了 core，移到 `src/node/` 或改为注入 |
+| `bun install --frozen-lockfile` fails | Run `bun install` locally to update `bun.lock`, then commit it |
+| pre-commit does not run | Reinstall the hooks with `bunx lefthook install` |
+| `check-docs` reports an unregistered document | Add a row to the index in `docs/README.md` |
+| The release job reports a version mismatch | The tag differs from `package.json#version`; re-create the tag |
+| Artifacts are missing files | Run `bun run build` first, then `bun run verify:package` |
+| `./node` cannot resolve `node.d.ts` | The build output is missing; run `bun run build` again and make sure `entry` includes `src/node.ts` |
+| A `node:` import shows up in the core build | A platform capability was placed in core; move it to `src/node/` or inject it instead |

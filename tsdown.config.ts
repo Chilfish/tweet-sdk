@@ -19,12 +19,13 @@ export default defineConfig({
       'x-client-transaction-id',
       'undici',
     ],
-    // citty 只被 CLI 使用且零运行时依赖：内联进产物后不必作为依赖安装，
-    // `bunx @chilfish/tweet` / `npx @chilfish/tweet` 也能直接跑。
+    // citty is used only by the CLI and has zero runtime dependencies: inlining it into
+    // the output means it does not have to be installed as a dependency, so
+    // `bunx @chilfish/tweet` / `npx @chilfish/tweet` also work out of the box.
     alwaysBundle: [
       'citty',
     ],
   },
-  // exports 由 package.json 手工维护，构建过程不得改写它。
+  // exports is maintained by hand in package.json; the build must never rewrite it.
   exports: false,
 })

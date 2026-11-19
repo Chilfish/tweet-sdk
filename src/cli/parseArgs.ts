@@ -1,8 +1,8 @@
 /**
- * 解析 CLI 的正整数参数（页码 / 数量等）。
+ * Parse positive integer CLI arguments (page numbers / counts, etc.).
  *
- * 非法值（空串、非数字、`< 1`）返回 `undefined`，由调用方按「未指定」处理，
- * 避免把 `0` 之类的值透传给从 1 开始计数的上游端点。
+ * Invalid values (empty string, non-numeric, `< 1`) return `undefined` so the caller treats them as
+ * "not specified", avoiding passing values like `0` through to upstream endpoints that count from 1.
  */
 export function parsePositiveInt(value: unknown): number | undefined {
   if (typeof value !== 'string' || value.trim() === '')
@@ -13,7 +13,7 @@ export function parsePositiveInt(value: unknown): number | undefined {
   return Math.floor(parsed)
 }
 
-/** 解析允许 0 的非负整数（重试次数等）。 */
+/** Parse a non-negative integer that allows 0 (retry counts, etc.). */
 export function parseNonNegativeInt(value: unknown): number | undefined {
   if (typeof value !== 'string' || value.trim() === '')
     return undefined

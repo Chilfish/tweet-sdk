@@ -15,7 +15,7 @@ function quoteBlock(text: string): string {
     .join('\n')
 }
 
-/** 单条富化推文的 Markdown 视图（面向人读，json 仍是脚本/管道默认）。 */
+/** Markdown view of a single enriched tweet (for humans; json stays the default for scripts / pipes). */
 export function renderTweetMarkdown(tweet: EnrichedTweet): string {
   const lines: string[] = []
   const displayName = tweet.user.name || tweet.user.screen_name
@@ -78,7 +78,7 @@ export function renderTweetMarkdown(tweet: EnrichedTweet): string {
   return lines.join('\n')
 }
 
-/** 推文列表的 Markdown 视图（回复 / 搜索 / 时间线共用）。 */
+/** Markdown view of a tweet list (shared by replies / search / timeline). */
 export function renderTweetsMarkdown(tweets: EnrichedTweet[], title: string): string {
   const lines: string[] = [`# ${title}`, '']
   for (const tweet of tweets) {
@@ -89,7 +89,7 @@ export function renderTweetsMarkdown(tweets: EnrichedTweet[], title: string): st
   return lines.join('\n').trimEnd()
 }
 
-/** 用户资料的 Markdown 视图（输入是取数层反序列化后的 `User` 模型）。 */
+/** Markdown view of a user profile (input is the `User` model deserialized by the fetch layer). */
 export function renderUserMarkdown(user: User): string {
   return [
     `# ${user.fullName} (@${user.userName})`,
@@ -109,7 +109,7 @@ export function renderUserMarkdown(user: User): string {
   ].join('\n')
 }
 
-/** Space 卡片的 Markdown 视图。 */
+/** Markdown view of a Space card. */
 export function renderSpaceMarkdown(space: SpaceDetails): string {
   const lines = [
     `## ${space.title || space.id} (${space.availability})`,

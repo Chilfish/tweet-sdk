@@ -3,32 +3,34 @@ import type { RawArticleResult } from '../types/raw/tweet/Details'
 import { mediaFromRaw, parseContentState } from './article-blocks'
 
 /**
- * X Article（长文）纯映射逻辑。
+ * Pure mapping logic for X Articles (long-form posts).
  *
- * 文章型推文的正文不在 `legacy.full_text`/`note_tweet` 里，而是一条指向文章页
- * 的 t.co 链接；文章本体在推文的 `article` 节点：
+ * The body of an article tweet is not in `legacy.full_text`/`note_tweet`, but in a
+ * t.co link pointing at the article page; the article itself lives in the tweet's
+ * `article` node:
  *
  * ```json
  * { "article": { "article_results": { "result": {
  *   "rest_id": "2104009234858024962", "title": "…", "preview_text": "…",
- *   "plain_text": "…（需 withArticlePlainText）",
- *   "content_state": { "blocks": [...], "entityMap": [...] },   // 需 withArticleRichContentState
+ *   "plain_text": "…(requires withArticlePlainText)",
+ *   "content_state": { "blocks": [...], "entityMap": [...] },   // requires withArticleRichContentState
  *   "media_entities": [...], "cover_media": {...}, "metadata": { "first_published_at_secs": … }
  * } } } }
  * ```
  *
- * 与 `space.ts` 一样只做纯映射，不做 IO，便于单测。块解析见 `~/lib/article/parse`。
+ * Like `space.ts` this is pure mapping with no IO, which keeps it unit-testable. See
+ * `~/lib/article/parse` for block parsing.
  */
 
-/** 正文/实体里的文章链接：`x.com/i/article/<id>` 或 `x.com/<user>/article/<id>` */
+/** Article link in the body/entities: `x.com/i/article/<id>` or `x.com/<user>/article/<id>` */
 const ARTICLE_URL_RE = /^https?:\/\/(?:www\.|mobile\.)?(?:twitter|x)\.com\/\w+\/article\/(\d+)/
 
-/** 该 URL 是否指向 X 文章页（正文据此避免与卡片重复展示同一个跳转） */
+/** Whether this URL points at an X article page (the body uses this to avoid showing the same jump target twice alongside the card) */
 export function isArticleUrl(url?: string | null): boolean {
   return typeof url === 'string' && ARTICLE_URL_RE.test(url)
 }
 
-/** 从文章链接里取出文章 id；不是文章链接时返回 null */
+/** Extracts the article id from an article link; returns null when it is not an article link */
 export function extractArticleIdFromUrl(url?: string | null): string | null {
   if (typeof url !== 'string')
     return null
@@ -36,7 +38,8 @@ export function extractArticleIdFromUrl(url?: string | null): string | null {
 }
 
 /**
- * 从推文实体里取文章 id（上游 `article` 节点缺失时的回退，兼容旧缓存探测）。
+ * Takes the article id from the tweet entities (the fallback when the upstream
+ * `article` node is missing, also covering older cache entries).
  */
 export function resolveArticleId(entities?: ReadonlyArray<unknown> | null): string | null {
   for (const entity of entities ?? []) {
@@ -59,8 +62,9 @@ function articleFromRawResult(result: RawArticleResult, id: string): TweetArticl
     ? result.preview_text
     : undefined
   const blocks = parseContentState(result.content_state, result.media_entities)
-  // 有块文档时 blocks 已覆盖全文，`plain_text` 完全冗余（长文可达数十 KB）——
-  // 仅在没有块文档（plain 降级）时保留纯文本。
+  // When a block document exists it already covers the full text, making `plain_text`
+  // fully redundant (long articles can reach tens of KB) — keep the plain text only
+  // when there is no block document (plain degradation).
   const plainText = blocks.length === 0 && typeof result.plain_text === 'string' && result.plain_text.trim()
     ? result.plain_text
     : undefined
@@ -90,11 +94,13 @@ function articleFromRawResult(result: RawArticleResult, id: string): TweetArticl
 }
 
 /**
- * 从推文 `article` 节点映射出 {@link TweetArticle}。
+ * Maps {@link TweetArticle} out of the tweet's `article` node.
  *
- * 无标题/摘要/正文时返回 null —— 宁可让正文里的裸链接照常渲染，也不给一张空卡片
- * （与 `mapTwitterCard` 的最终校验同一取舍）。仅有文章链接（search/list 等不取富文本
- * 的路径）时，卡片入口由 {@link resolveArticleLink} 提供。
+ * Returns null when there is no title/summary/body — better to let the bare link in
+ * the body render as usual than to show an empty card (the same trade-off as the
+ * final check in `mapTwitterCard`). When only the article link is available (paths
+ * such as search/list that do not fetch rich content), the card entry point is
+ * provided by {@link resolveArticleLink}.
  */
 export function mapArticle(rawTweet: RawTweet | null | undefined, entities?: Entity[]): TweetArticle | null {
   const result = (rawTweet as { article?: { article_results?: { result?: RawArticleResult } } } | null | undefined)
@@ -113,10 +119,12 @@ export function mapArticle(rawTweet: RawTweet | null | undefined, entities?: Ent
 }
 
 /**
- * 只凭正文里的文章链接给出一个最小入口（`title` 为空）。
+ * Produces a minimal entry point from the article link in the body alone (`title` is
+ * empty).
  *
- * 供 search / list / user-timeline 等**不取富文本**的路径渲染「X Article → 阅读全文」，
- * 点击进入 `/article/:id` 后再拉取完整块文档。
+ * Used by paths that **do not fetch rich content**, such as search / list /
+ * user-timeline, to render "X Article → Read full article"; clicking through to
+ * `/article/:id` then fetches the full block document.
  */
 export function resolveArticleLink(entities?: ReadonlyArray<unknown> | null): TweetArticle | null {
   const id = resolveArticleId(entities)

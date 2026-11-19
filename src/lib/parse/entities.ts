@@ -2,7 +2,7 @@ import type { Entity, EntityWithType, RawTweet, SeparatorEntity } from '../types
 
 const LEADING_MENTION_RE = /^(@\w{1,15}\s*)+/
 
-// 用于 AI 交互的载荷
+// Payload used for AI interactions
 export interface TranslationPayload {
   maskedText: string
   entityMap: Map<string, Entity>
@@ -26,7 +26,7 @@ function extractRanges(tweet: RawTweet, leadingMentionEndIndex: number): Interna
     if (rawIndices[1] <= leadingMentionEndIndex)
       return
 
-    // Media 特殊处理：逻辑长度为0，不参与文本切分
+    // Media is special-cased: its logical length is 0, so it never takes part in splitting the text
     const effectiveIndices: [number, number] = type === 'media'
       ? [0, 0]
       : [
@@ -68,7 +68,7 @@ function extractRanges(tweet: RawTweet, leadingMentionEndIndex: number): Interna
 
 function createFinalEntity(base: any, text: string, index: number): Entity {
   const common = { index, text }
-  // 移除 indices 字段，只保留业务数据
+  // Drop the indices field, keeping only the business data
   const { indices, ...cleanBase } = base
 
   switch (base.type) {
@@ -121,7 +121,7 @@ export function getEntities(tweet: RawTweet, rawText: string): Entity[] {
   for (const range of textRanges) {
     const [start, end] = range.indices
 
-    // 填充纯文本片段
+    // Fill in the plain-text segments
     if (cursor < start) {
       const textSegment = textChars.slice(cursor, start).join('')
       if (textSegment) {
@@ -133,13 +133,13 @@ export function getEntities(tweet: RawTweet, rawText: string): Entity[] {
       }
     }
 
-    // 处理功能性实体
+    // Handle functional entities
     const entityText = textChars.slice(start, end).join('')
     result.push(createFinalEntity(range.data, entityText, result.length))
     cursor = end
   }
 
-  // 尾部文本
+  // Trailing text
   if (cursor < textChars.length) {
     result.push({
       type: 'text',
@@ -148,7 +148,7 @@ export function getEntities(tweet: RawTweet, rawText: string): Entity[] {
     })
   }
 
-  // 移除 Media 占位的 Text (如果需要) 并添加 Media Entity
+  // Remove the text placeholder for the Media (if needed) and add the Media entity
   const mediaRange = ranges.find(range => range.type === 'media')
   if (mediaRange) {
     const mediaUrl = mediaRange.data.url?.trim()
@@ -162,13 +162,13 @@ export function getEntities(tweet: RawTweet, rawText: string): Entity[] {
       }
     })
 
-    // Media 始终追加在最后，或者根据业务需求放置
-    // 这里我们不加入 Media 到 text 流中，通常由 UI 独立渲染组件
-    // 但为了保持数据完整性，如果原逻辑需要返回 Media Entity，可以 push
+    // Media is always appended last, or placed according to business requirements
+    // Here we do not add Media into the text stream; the UI normally renders it with a dedicated component
+    // But to keep the data complete, if the original logic needed to return a Media entity, it could push
     // result.push(createFinalEntity(mediaRange.data, '', result.length))
   }
 
-  // 重新标准化 index 确保连续
+  // Re-normalize the indices so they stay contiguous
   const standardEntities = result.map((e, i) => ({ ...e, index: i }))
 
   const legacy = tweet.legacy
@@ -207,8 +207,8 @@ export function getMediaAltEntities(tweet: RawTweet): Entity[] {
   const altEntities: Entity[] = []
   mediaList.forEach((media: any, i: number) => {
     if (media.ext_alt_text) {
-      // 这里的 Separator 主要是为了让 AI 理解上下文分隔
-      // 实际翻译逻辑中可能会被过滤或特殊处理
+      // The Separator here mainly exists so the AI understands the context boundary
+      // In the actual translation logic it may be filtered out or handled specially
       // altEntities.push({
       //   type: 'separator',
       //   text: ' | ',
@@ -227,7 +227,7 @@ export function getMediaAltEntities(tweet: RawTweet): Entity[] {
 }
 
 /**
- * 序列化：将 Entity 数组转换为带占位符的字符串
+ * Serialize: turns the Entity array into a string with placeholders
  */
 export function serializeForAI(entities: Entity[]): TranslationPayload {
   const entityMap = new Map<string, Entity>()
@@ -239,7 +239,7 @@ export function serializeForAI(entities: Entity[]): TranslationPayload {
       maskedText += entity.text
     }
     else {
-      // 生成占位符: <<__TYPE_INDEX__>>
+      // Generate a placeholder: <<__TYPE_INDEX__>>
       const placeholder = `<<__${entity.type.toUpperCase()}_${pCounter++}__>>`
       maskedText += placeholder
       entityMap.set(placeholder, entity)
@@ -250,15 +250,15 @@ export function serializeForAI(entities: Entity[]): TranslationPayload {
 }
 
 /**
- * 还原：将翻译结果解析为 Entity 数组
+ * Restore: parses the translation result back into an Entity array
  */
 export function restoreEntities(
   translatedText: string,
   entityMap: Map<string, Entity>,
-  originalEntities: Entity[], // 新增参数：原始实体数组
+  originalEntities: Entity[], // New parameter: the original entity array
 ): Entity[] {
   const result: Entity[] = []
-  // 原文 text 实体按顺序排列，用于为翻译实体流回填原文（仅展示/同步用途）
+  // The original `text` entities, in order, used to backfill the original text into the translated entity stream (display/sync purposes only)
   const originalTextEntities = originalEntities
     .filter(e => e.type === 'text')
     .sort((a, b) => a.index - b.index)
@@ -272,7 +272,7 @@ export function restoreEntities(
     }
   }
 
-  // 正则捕获占位符，保留分隔符
+  // Regex-capture the placeholders while keeping the separators
   const parts = translatedText.split(/(<<__[A-Z]+_\d+__>>)/g)
   let newIndex = 0
   let lastSeparator: SeparatorEntity | null = null
@@ -282,8 +282,8 @@ export function restoreEntities(
       continue
 
     if (entityMap.has(part)) {
-      // === 命中原有实体 (Hashtag, URL, Mention) ===
-      // 直接复用原始对象，保留原始 text (如 #原本的Tag) 和 href
+      // === Matched an existing entity (Hashtag, URL, Mention) ===
+      // Reuse the original object directly, preserving the original text (e.g. #originalTag) and href
       const original = entityMap.get(part)!
 
       if (original.type === 'separator') {
@@ -295,31 +295,31 @@ export function restoreEntities(
 
       result.push({
         ...original,
-        // 保持原始索引，以便在编辑器中通过 index 匹配回填
+        // Keep the original index so the editor can match it by index for backfilling
         index: original.index,
       })
     }
     else {
       if (lastSeparator) {
-        // 处理 media_alt 类型
+        // Handle the media_alt type
         const mediaIndex = 20000 + (lastSeparator.mediaIndex ?? 0)
         const originalMediaAlt = originalMediaAltByIndex.get(mediaIndex)
 
         result.push({
           type: 'media_alt',
-          text: originalMediaAlt?.text ?? '', // 从原始实体中获取 text
+          text: originalMediaAlt?.text ?? '', // Take text from the original entity
           aiTranslation: part,
           index: mediaIndex,
         })
         lastSeparator = null
       }
       else {
-        // 处理 text 类型
+        // Handle the text type
         const originalText = originalTextEntities[originalTextCursor++]
 
         result.push({
           type: 'text',
-          text: originalText?.text ?? '', // 从原始实体中获取 text
+          text: originalText?.text ?? '', // Take text from the original entity
           index: originalText?.index ?? (30000 + newIndex++),
           aiTranslation: part,
         })
@@ -331,13 +331,15 @@ export function restoreEntities(
 }
 
 /**
- * 将 AI 翻译结果合并回原始实体数组中
+ * Merges AI translation results back into the original entity array
  */
 export function applyAITranslations(base: Entity[], ai: Entity[]): Entity[] {
-  // AI 结果可能是独立翻译流（结构与 base 不对齐，如占位符被移到句中，
-  // restoreEntities 会产生 base 没有的 index，例如 30000+ 的文本片段）。
-  // 此时直接返回翻译流，避免 index 对齐合并时把片段静默丢弃（与显示层的
-  // shouldRenderTranslatedEntitiesDirectly 逻辑一致）。
+  // The AI result may be a standalone translation stream (its structure does not align
+  // with base, e.g. placeholders moved mid-sentence, so restoreEntities produces indices
+  // base does not have, like 30000+ text fragments).
+  // In that case return the translation stream directly, so that aligning and merging by
+  // index does not silently drop fragments (same logic as shouldRenderTranslatedEntitiesDirectly
+  // in the display layer).
   if (ai.length !== base.length || ai.some(e => !base.some(b => b.index === e.index))) {
     return ai
   }
@@ -349,7 +351,7 @@ export function applyAITranslations(base: Entity[], ai: Entity[]): Entity[] {
     if (!found)
       return original
 
-    // 只有当 AI 结果中有翻译内容，且与原文不同时，才更新 aiTranslation
+    // Only update aiTranslation when the AI result actually carries translated content that differs from the original
     const aiVal = found.aiTranslation || (found.text !== original.text
       ? found.text
       : undefined)

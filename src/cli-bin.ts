@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 /**
- * bin 入口：唯一允许顶层副作用的模块，不通过 `package.json#exports` 暴露。
+ * bin entry: the only module allowed to have top-level side effects; not exposed through `package.json#exports`.
  *
- * 只用静态 import 引入无依赖的版本检查；其余模块全部动态加载——低版本 Node
- * 在求值依赖时会先抛内部错误，用户看到的会是依赖而不是「Node 太旧」。
+ * Only the dependency-free version check is a static import; every other module is loaded dynamically —
+ * on older Node versions, evaluating the dependencies throws an internal error first, so users would see
+ * the dependency rather than "Node is too old".
  */
 import process from 'node:process'
 import { isSupportedNodeVersion, nodeVersionError } from './cli/nodeVersion'

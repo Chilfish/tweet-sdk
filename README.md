@@ -1,35 +1,35 @@
 # @chilfish/tweet
 
-> X（Twitter）取数与推文富化 SDK：平台无关核心、Node 适配与 React 组件。
+> An SDK for X (Twitter) data fetching and tweet enrichment: platform-agnostic core, Node adapter, and React components.
 
 [![CI](https://github.com/Chilfish/tweet-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/Chilfish/tweet-sdk/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/@chilfish/tweet.svg)](https://www.npmjs.com/package/@chilfish/tweet)
 [![License](https://img.shields.io/github/license/Chilfish/tweet-sdk.svg)](./LICENSE.md)
 
-## 特性
+## Features
 
-- **平台无关核心** — 传输层是可注入的 `HttpClient`，默认走 `fetch`；Workers / Deno / Bun / 浏览器 / Node 共用同一份实现。
-- **多入口单包** — `.`（core）、`./node`（proxy 与文件上传）、`./react`（组件，Phase 3）互相独立。
-- **类型化错误** — `TwitterApiError` / `RateLimitError` / `AuthError` / `NotFoundError`，Pool 直接读 `status` 分类。
-- **多 Key 轮询池** — per-key 冷却、指数退避、`inFlight` 负载均衡、可注入分类器与日志。
-- **解析即契约** — `enrichTweet` 产出的 `EnrichedTweet` 是 core 与 UI 之间唯一的契约。
-- **双格式产物** — ESM / CJS 各自带独立类型声明，`sideEffects: false`。
-- **严格类型** — `strict` + `verbatimModuleSyntax`，强制 `import type` / `export type`。
+- **Platform-agnostic core** — the transport layer is an injectable `HttpClient` that defaults to `fetch`; Workers / Deno / Bun / browsers / Node all share the same implementation.
+- **Single package, multiple entries** — `.` (core), `./node` (proxy and file upload), and `./react` (components, Phase 3) are independent of one another.
+- **Typed errors** — `TwitterApiError` / `RateLimitError` / `AuthError` / `NotFoundError`; the Pool reads `status` directly to classify them.
+- **Multi-key rotation pool** — per-key cooldown, exponential backoff, `inFlight` load balancing, injectable classifier and logger.
+- **Parsing as contract** — the `EnrichedTweet` produced by `enrichTweet` is the only contract between core and UI.
+- **Dual-format output** — ESM / CJS each ship their own type declarations, with `sideEffects: false`.
+- **Strict typing** — `strict` + `verbatimModuleSyntax`, enforcing `import type` / `export type`.
 
-## 环境要求
+## Requirements
 
-| 工具 | 版本 |
+| Tool | Version |
 |---|---|
 | Bun | 1.4.4+ |
-| Node.js | 20+（仅 `./node` 入口需要） |
+| Node.js | 20+ (only needed for the `./node` entry) |
 
-## 安装
+## Installation
 
 ```bash
 bun add @chilfish/tweet
 ```
 
-## 快速开始
+## Quick start
 
 ```ts
 import { enrichTweet, TwitterClient } from '@chilfish/tweet'
@@ -41,7 +41,7 @@ const tweet = enrichTweet(raw)
 console.log(tweet?.text, tweet?.mediaDetails?.length)
 ```
 
-Node 下用 `./node` 的便捷工厂（读取 `TWEET_KEYS` / `http_proxy`、支持文件上传）：
+On Node, use the convenience factory from `./node` (reads `TWEET_KEYS` / `http_proxy`, supports file uploads):
 
 ```ts
 import { createNodeClient, readMediaFile } from '@chilfish/tweet/node'
@@ -52,102 +52,102 @@ await client.run(fetcher => fetcher.request('MEDIA_UPLOAD_APPEND', {
 }))
 ```
 
-## 命令行
+## Command line
 
 ```bash
-# 全局安装后使用 tweet-cli
+# Use tweet-cli after a global install
 bun add -g @chilfish/tweet
 
-# 或直接运行
+# Or run it directly
 bunx @chilfish/tweet tweet get 1968314084207788302 -f md
-npx @chilfish/tweet tweet search '#ゆめみた' --type latest
+npx @chilfish/tweet tweet search '#buildinpublic' --type latest
 ```
 
 ```text
 tweet-cli
-├── tweet get <id>                  单条推文（默认富化，--raw 输出原始）
-├── tweet replies <id>              回复 + nextCursor
-├── tweet search <query>            搜索（支持 from: / since: / min_faves: 等）
-├── user get <id|username>          用户资料
-├── user timeline <id>              用户时间线
-├── space get <id>                  Space 元数据
-├── list tweets <id>                列表推文
-└── media download <id> -o <dir>    下载图片原图 / 最高码率 mp4
+├── tweet get <id>                  Single tweet (enriched by default; --raw outputs the raw payload)
+├── tweet replies <id>              Replies + nextCursor
+├── tweet search <query>            Search (supports from: / since: / min_faves: and more)
+├── user get <id|username>          User profile
+├── user timeline <id>              User timeline
+├── space get <id>                  Space metadata
+├── list tweets <id>                List tweets
+└── media download <id> -o <dir>    Download original images / highest-bitrate mp4
 ```
 
-- 认证：`--keys` / `--cookie` / `.env` 的 `TWEET_KEYS`；`--proxy` 或 `.env` 的 `http_proxy`。
-- 输出：查询默认 JSON，`--format markdown`（`-f md`）给人读；错误走 stderr 的 JSON 信封。
-- `media download` 以 NDJSON 事件（`item` / `done`）流式输出。
+- Authentication: `--keys` / `--cookie` / `TWEET_KEYS` from `.env`; `--proxy` or `http_proxy` from `.env`.
+- Output: queries default to JSON, `--format markdown` (`-f md`) produces a human-readable view; errors go to stderr as a JSON envelope.
+- `media download` streams NDJSON events (`item` / `done`).
 
-详见 [docs/guide/cli.md](./docs/guide/cli.md)。
+See [docs/guide/cli.md](./docs/guide/cli.md) for details.
 
-## 入口
+## Entries
 
-| 入口 | 内容 | 运行时 |
+| Entry | Contents | Runtime |
 |---|---|---|
-| `@chilfish/tweet` | transport / requests / auth / pool / parse / types | 平台无关 |
-| `@chilfish/tweet/node` | proxy dispatcher、`readMediaFile`、`createNodeClient` | Node 20+ |
-| `@chilfish/tweet/cli` | 可嵌入的 citty 命令树 | Node 20+ |
-| `tweet-cli`（bin） | 同上，供 `bunx` / `npx` / 全局安装 | Node 20+ |
-| `@chilfish/tweet/react` | 推文展示组件（Phase 3，尚未发布） | 浏览器 |
+| `@chilfish/tweet` | transport / requests / auth / pool / parse / types | Platform-agnostic |
+| `@chilfish/tweet/node` | proxy dispatcher, `readMediaFile`, `createNodeClient` | Node 20+ |
+| `@chilfish/tweet/cli` | Embeddable citty command tree | Node 20+ |
+| `tweet-cli` (bin) | Same as above, for `bunx` / `npx` / global install | Node 20+ |
+| `@chilfish/tweet/react` | Tweet display components (Phase 3, not released yet) | Browser |
 
-## 命令
+## Commands
 
-| 命令 | 说明 |
+| Command | Description |
 |---|---|
-| `bun run dev` | tsdown watch 构建 |
-| `bun run build` | 构建 ESM + CJS + 类型声明 |
+| `bun run dev` | tsdown watch build |
+| `bun run build` | Build ESM + CJS + type declarations |
 | `bun run typecheck` | `tsc --noEmit` |
-| `bun run lint` | ESLint 自动修复 |
-| `bun run lint:check` | ESLint 只检查 |
-| `bun run test` | 单次运行测试 |
-| `bun run test:coverage` | 带 v8 覆盖率 |
-| `bun run check` | 全量门禁（类型 + lint + 测试 + 构建 + 产物校验） |
-| `bun run check:docs` | 文档链接与索引校验 |
-| `bun run cli` | 本地运行 CLI（`bun src/cli-bin.ts`） |
-| `bun run example` | 运行示例 |
-| `bun run verify:package` | 校验发布产物 |
-| `bun run release` | 升级版本、提交、打 tag、推送 |
+| `bun run lint` | ESLint with autofix |
+| `bun run lint:check` | ESLint check only |
+| `bun run test` | Run the tests once |
+| `bun run test:coverage` | Run with v8 coverage |
+| `bun run check` | Full gate (types + lint + tests + build + artifact verification) |
+| `bun run check:docs` | Verify documentation links and index |
+| `bun run cli` | Run the CLI locally (`bun src/cli-bin.ts`) |
+| `bun run example` | Run the examples |
+| `bun run verify:package` | Verify the published artifacts |
+| `bun run release` | Bump the version, commit, tag, and push |
 
-## 目录结构
+## Directory structure
 
 ```
 src/
-  index.ts                    # core 公开入口
-  node.ts                     # ./node 入口
+  index.ts                    # core public entry
+  node.ts                     # ./node entry
   lib/
-    http/                     # HttpClient + fetch 实现 + 编码工具
-    transaction.ts            # x-client-transaction-id 获取
-    errors.ts                 # 类型化错误
+    http/                     # HttpClient + fetch implementation + encoding utilities
+    transaction.ts            # x-client-transaction-id acquisition
+    errors.ts                 # typed errors
     pool/                     # RettiwtPool
-    client.ts                 # TwitterClient 门面
-    collections/ enums/ models/ requests/ services/   # 取数层（自 Rettiwt-API 派生）
+    client.ts                 # TwitterClient facade
+    collections/ enums/ models/ requests/ services/   # fetch layer (derived from Rettiwt-API)
     parse/                    # enrich / entities / poll / space / article / jetfuel
-    types/                    # raw + enriched 类型
+    types/                    # raw + enriched types
     media-url.ts
-  node/                       # Node 适配实现
-tests/                        # 单元测试，镜像 src/
-examples/                     # 可运行示例
-docs/                         # 内部文档
-scripts/                      # 门禁与发布脚本
+  node/                       # Node adapter implementation
+tests/                        # unit tests, mirroring src/
+examples/                     # runnable examples
+docs/                         # internal documentation
+scripts/                      # gate and release scripts
 ```
 
-## 发布流程
+## Release process
 
-1. 在 `CHANGELOG.md` 的 `## Unreleased` 写清本次变化。
-2. 运行 `bun run release`，`bumpp` 会升级版本、提交、打 tag 并推送。
-3. 推送的 `v*` tag 触发 `publish.yml`：校验 tag 与 `package.json`、CHANGELOG 版本节、全量门禁，然后 `npm publish --provenance`。
+1. Describe the changes for this release under `## Unreleased` in `CHANGELOG.md`.
+2. Run `bun run release`; `bumpp` bumps the version, commits, tags, and pushes.
+3. The pushed `v*` tag triggers `publish.yml`: it verifies the tag against `package.json`, the CHANGELOG version section, and the full gate, then runs `npm publish --provenance`.
 
-详见 [docs/engineering/build-and-release.md](./docs/engineering/build-and-release.md) 与 [发版检查表](./docs/engineering/release-checklist.md)。
+See [docs/engineering/build-and-release.md](./docs/engineering/build-and-release.md) and the [release checklist](./docs/engineering/release-checklist.md) for details.
 
-## 文档
+## Documentation
 
-- [docs/README.md](./docs/README.md) — 文档索引与「何时阅读」
-- [docs/reference/api.md](./docs/reference/api.md) — 公开 API 与导出面
-- [docs/engineering/architecture.md](./docs/engineering/architecture.md) — 架构与分层
-- [docs/reference/package-contract.md](./docs/reference/package-contract.md) — package.json 契约
-- [docs/engineering/testing.md](./docs/engineering/testing.md) — 测试规范
+- [docs/README.md](./docs/README.md) — documentation index and "when to read what"
+- [docs/reference/api.md](./docs/reference/api.md) — public API and export surface
+- [docs/engineering/architecture.md](./docs/engineering/architecture.md) — architecture and layering
+- [docs/reference/package-contract.md](./docs/reference/package-contract.md) — package.json contract
+- [docs/engineering/testing.md](./docs/engineering/testing.md) — testing conventions
 
-## 许可证
+## License
 
-[MIT](./LICENSE.md)。本包派生自 [Rettiwt-API](https://github.com/Rishikant181/Rettiwt-API)（MIT）与 [react-tweet](https://github.com/vercel/react-tweet)（MIT），原始版权声明保留在 [NOTICE.md](./NOTICE.md)。
+[MIT](./LICENSE.md). This package is derived from [Rettiwt-API](https://github.com/Rishikant181/Rettiwt-API) (MIT) and [react-tweet](https://github.com/vercel/react-tweet) (MIT); the original copyright notices are retained in [NOTICE.md](./NOTICE.md).

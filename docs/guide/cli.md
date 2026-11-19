@@ -1,54 +1,54 @@
-# 命令行
+# Command Line
 
-`@chilfish/tweet` 提供 `tweet-cli`（`bin`）与 `./cli` 子路径。CLI 只依赖 `./node` 能力，需要 Node 20+。
+`@chilfish/tweet` ships `tweet-cli` (the `bin`) and the `./cli` subpath. The CLI only depends on the `./node` capabilities and requires Node 20+.
 
-## 安装与运行
+## Install and run
 
 ```bash
-# 全局
+# Global
 bun add -g @chilfish/tweet
 
-# 或直接运行
+# Or run it directly
 bunx @chilfish/tweet tweet get <id>
 npx @chilfish/tweet tweet get <id>
 ```
 
-本地开发时用仓库脚本：
+For local development, use the repository script:
 
 ```bash
 bun run cli --help
 ```
 
-## 认证
+## Authentication
 
-| 来源 | 说明 |
+| Source | Description |
 |---|---|
-| `--keys/-k` | 逗号分隔的 base64 cookie（即 `TWEET_KEYS` 的单项） |
-| `--cookie` | 原始 `k=v; k=v` Cookie 串，CLI 自动 base64 编码 |
-| `--env-file` | `.env` 路径（默认 `<pwd>/.env`），读取 `TWEET_KEYS` / `http_proxy` |
-| `--proxy/-p` | HTTP(S) 代理，覆盖 env 文件 |
-| `--verbose/-v` | 把 pool 轮换 / 解析回退事件以 JSON 行写到 stderr |
+| `--keys/-k` | Comma-separated base64 cookies (that is, an individual `TWEET_KEYS` entry) |
+| `--cookie` | Raw `k=v; k=v` cookie string; the CLI base64-encodes it automatically |
+| `--env-file` | Path to `.env` (default `<pwd>/.env`); reads `TWEET_KEYS` / `http_proxy` |
+| `--proxy/-p` | HTTP(S) proxy; overrides the env file |
+| `--verbose/-v` | Writes pool rotation / parse-fallback events to stderr as JSON lines |
 
-优先级：`--keys` → `--cookie` → `--env-file` 的 `TWEET_KEYS`。都没有时按访客身份请求（仅公开数据）。
+Precedence: `--keys` → `--cookie` → `TWEET_KEYS` from `--env-file`. When none of them is present the request is made as a guest (public data only).
 
-## 命令
+## Commands
 
 ```
 tweet-cli
-├── tweet get <id>                     单条推文（默认富化，--raw 输出原始）
-├── tweet replies <id>                 回复 + nextCursor
-├── tweet search <query>               搜索（支持 from: / since: / min_faves: 等）
-├── user get <id|username>             用户资料
-├── user timeline <id>                 用户时间线（帖子 + 回复）
-├── space get <id>                     Space 元数据（已删除 → unavailable）
-├── list tweets <id>                   列表推文
-└── media download <id> -o <dir>       下载图片原图 / 最高码率 mp4
+├── tweet get <id>                   single tweet (enriched by default; --raw prints the raw payload)
+├── tweet replies <id>               replies + nextCursor
+├── tweet search <query>             search (supports from: / since: / min_faves: and so on)
+├── user get <id|username>           user profile
+├── user timeline <id>               user timeline (posts + replies)
+├── space get <id>                   Space metadata (deleted → unavailable)
+├── list tweets <id>                 list tweets
+└── media download <id> -o <dir>     download original images / highest-bitrate mp4
 ```
 
-## 输出契约
+## Output contract
 
-- 查询命令默认 JSON（2 空格缩进），`--format markdown`（`-f md`）输出人读视图。
-- 错误统一输出到 **stderr** 的 JSON 信封，退出码非 0：
+- Query commands print JSON by default (2-space indentation); `--format markdown` (`-f md`) prints a human-readable view.
+- Errors are always written to **stderr** as a JSON envelope, with a non-zero exit code:
 
 ```json
 {
@@ -59,31 +59,31 @@ tweet-cli
 }
 ```
 
-- `media download` 是流式命令，stdout 输出 NDJSON 事件：`item`（`planned` / `downloaded` / `failed`）与 `done` 汇总；任一失败时退出码为 1。
+- `media download` is a streaming command: it writes NDJSON events to stdout — `item` (`planned` / `downloaded` / `failed`) and a `done` summary; the exit code is 1 if any item fails.
 
-## 未知参数
+## Unknown arguments
 
-citty 默认静默忽略未知 flag，脚本里 `--formt` 这种拼写错误很难发现。CLI 在 `runMain` 之前校验一次：
+citty silently ignores unknown flags by default, which makes typos such as `--formt` in scripts very hard to notice. The CLI validates once before `runMain`:
 
-- 未知 flag 直接报错，并给出最接近的候选；
-- 参数写在子命令之前（citty 同样会忽略）时，提示把它写到子命令之后。
+- unknown flags fail immediately, with the closest candidate suggested;
+- when an argument is placed before the subcommand (citty ignores those too), the CLI suggests moving it after the subcommand.
 
-## 帮助
+## Help
 
-`--help` 按终端显示宽度对齐（CJK 记 2 列），多行 description 拆成续行；`NO_COLOR=1` / `CI` / `TERM=dumb` 下自动关闭颜色。
+`--help` aligns output to the terminal width (CJK characters count as 2 columns) and wraps multi-line descriptions onto continuation lines; colors are disabled automatically under `NO_COLOR=1` / `CI` / `TERM=dumb`.
 
-## 示例
+## Examples
 
 ```bash
-# 读取原始推文并富化，人读视图
+# Fetch a raw tweet, enrich it, and print the human-readable view
 tweet-cli tweet get 1968314084207788302 -f md
 
-# 搜索最新日语推文
-tweet-cli tweet search '#ゆめみた' --type latest --count 20
+# Search the latest tweets for a hashtag
+tweet-cli tweet search '#buildinpublic' --type latest --count 20
 
-# 翻页
+# Paginate
 tweet-cli tweet replies 1968314084207788302 --cursor <nextCursor>
 
-# 下载媒体到 ./out
+# Download media to ./out
 tweet-cli media download 1968314084207788302 -o out --concurrency 4
 ```

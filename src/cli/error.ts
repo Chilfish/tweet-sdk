@@ -1,4 +1,4 @@
-/** CLI 配置错误：与核心的 `TwitterApiError` 区分，统一映射到 `CONFIG_INVALID`。 */
+/** CLI configuration error: distinct from the core `TwitterApiError`, always mapped to `CONFIG_INVALID`. */
 export type CliErrorCode = 'CONFIG_INVALID' | 'REQUEST_FAILED' | 'MEDIA_DOWNLOAD_FAILED'
 
 export interface CliErrorOptions {
@@ -18,7 +18,7 @@ export class CliError extends Error {
   }
 }
 
-/** 便捷构造 `CONFIG_INVALID`（参数缺失 / 取值非法）。 */
+/** Convenience constructor for `CONFIG_INVALID` (missing argument / invalid value). */
 export function configError(message: string, context: Record<string, unknown> = {}): CliError {
   return new CliError(message, { code: 'CONFIG_INVALID', context })
 }

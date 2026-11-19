@@ -1,61 +1,62 @@
-# 文档索引
+# Documentation Index
 
-本目录是项目的唯一文档入口。**新增文档必须在下表登记一行**，`bun run check:docs` 会强制校验。
+This directory is the single documentation entry point for the project. **Every new document must be registered as a row in the tables below**; `bun run check:docs` enforces this.
 
-## 三类必写文档
+## The three mandatory document categories
 
-只有以下改动强制先写文档，其余改动当天补 [development-log](./development-log/README.md)：
+Only the following changes require documentation up front; every other change gets a [development log](./development-log/README.md) entry the same day:
 
-1. 公开契约变化（导出面、类型、行为语义）
-2. 新增或修改构建/发布流程
-3. 事故与可靠性修复（写入 [postmortem](./postmortem/README.md)）
+1. Changes to the public contract (export surface, types, behavioral semantics)
+2. New or modified build/release processes
+3. Incidents and reliability fixes (recorded in [postmortem](./postmortem/README.md))
 
-## 使用指南
+## Guides
 
-| 文档 | 说明 | 何时阅读 |
+| Document | Description | When to read |
 |---|---|---|
-| [guide/getting-started.md](./guide/getting-started.md) | 安装、初始化、第一条命令 | 第一次接触本项目 |
-| [guide/usage.md](./guide/usage.md) | 日常开发、发布、常见操作 | 日常开发 |
-| [guide/cli.md](./guide/cli.md) | `tweet-cli` 命令、输出契约、认证 | 使用命令行时 |
+| [guide/getting-started.md](./guide/getting-started.md) | Installation, initialization, first command | First time working with this project |
+| [guide/usage.md](./guide/usage.md) | Day-to-day development, releases, common operations | During day-to-day development |
+| [guide/cli.md](./guide/cli.md) | `tweet-cli` commands, output contract, authentication | When using the command line |
 
-## 工程规范
+## Engineering standards
 
-| 文档 | 说明 | 何时阅读 |
+| Document | Description | When to read |
 |---|---|---|
-| [engineering/architecture.md](./engineering/architecture.md) | 分层、依赖方向、公开面边界 | 新增模块或调整目录前 |
-| [engineering/code-style.md](./engineering/code-style.md) | 命名、导入顺序、类型与错误处理 | 每次写代码 |
-| [engineering/testing.md](./engineering/testing.md) | 测试分层、命名、覆盖率 | 新增功能或修 bug 时 |
-| [engineering/build-and-release.md](./engineering/build-and-release.md) | 双格式构建、产物契约、发布链路 | 改构建配置或发布时 |
-| [engineering/ci.md](./engineering/ci.md) | 流水线结构、缓存、门禁与排障 | 改 workflow 或 CI 失败时 |
-| [engineering/dependencies.md](./engineering/dependencies.md) | 依赖策略、锁文件、升级流程 | 增删依赖或升级版本 |
-| [engineering/security.md](./engineering/security.md) | 供应链、密钥、OIDC、漏洞响应 | 涉及密钥、发布或安全问题时 |
-| [engineering/git-workflow.md](./engineering/git-workflow.md) | 分支、提交信息、hooks、PR 规范 | 提交前 |
-| [engineering/release-checklist.md](./engineering/release-checklist.md) | 发版逐项检查表 | 每次发版 |
+| [engineering/architecture.md](./engineering/architecture.md) | Layering, dependency direction, public surface boundaries | Before adding a module or restructuring directories |
+| [engineering/code-style.md](./engineering/code-style.md) | Naming, import order, types and error handling | Every time you write code |
+| [engineering/testing.md](./engineering/testing.md) | Test layers, naming, coverage | When adding a feature or fixing a bug |
+| [engineering/build-and-release.md](./engineering/build-and-release.md) | Dual-format builds, artifact contract, release pipeline | When changing build config or publishing |
+| [engineering/ci.md](./engineering/ci.md) | Pipeline structure, caching, gates and troubleshooting | When changing a workflow or when CI fails |
+| [engineering/dependencies.md](./engineering/dependencies.md) | Dependency policy, lockfile, upgrade process | When adding, removing or upgrading dependencies |
+| [engineering/security.md](./engineering/security.md) | Supply chain, secrets, OIDC, vulnerability response | When secrets, publishing or security are involved |
+| [engineering/git-workflow.md](./engineering/git-workflow.md) | Branches, commit messages, hooks, PR conventions | Before committing |
+| [engineering/release-checklist.md](./engineering/release-checklist.md) | Item-by-item release checklist | Every release |
+| [engineering/audit-2026-11-19.md](./engineering/audit-2026-11-19.md) | Pre-integration audit: architecture, dependencies, blockers and release readiness | Before wiring the package into a consumer |
 
-## 参考
+## Reference
 
-| 文档 | 说明 |
+| Document | Description |
 |---|---|
-| [reference/api.md](./reference/api.md) | 公开 API 与导出面说明 |
-| [reference/package-contract.md](./reference/package-contract.md) | `package.json` 字段契约 |
+| [reference/api.md](./reference/api.md) | Public API and export surface |
+| [reference/package-contract.md](./reference/package-contract.md) | `package.json` field contract |
 
-## 事故复盘
+## Postmortems
 
-| 文档 | 说明 |
+| Document | Description |
 |---|---|
-| [postmortem/README.md](./postmortem/README.md) | 复盘索引与高频雷区自查清单 |
-| [postmortem/TEMPLATE.md](./postmortem/TEMPLATE.md) | 新复盘模板 |
+| [postmortem/README.md](./postmortem/README.md) | Postmortem index and self-check list of recurring pitfalls |
+| [postmortem/TEMPLATE.md](./postmortem/TEMPLATE.md) | Template for a new postmortem |
 
-## 开发日志与归档
+## Development logs and archive
 
-| 文档 | 说明 |
+| Document | Description |
 |---|---|
-| [development-log/README.md](./development-log/README.md) | 按日期记录的开发日志规范 |
-| [archive/README.md](./archive/README.md) | 已失效文档的归档区 |
+| [development-log/README.md](./development-log/README.md) | Conventions for date-based development logs |
+| [archive/README.md](./archive/README.md) | Archive for documents that no longer apply |
 
-## 约定
+## Conventions
 
-- **文档即事实**：路径、命令、字段必须与当前代码一致；发现过时就地修正。
-- **文档先行**：仅限上文「三类必写文档」，其余不设流程门槛。
-- **归档制**：失效文档移入 `archive/`，不留在主目录误导读者。
-- 新增文档未在索引登记、或链接失效时，`bun run check:docs` 会失败。
+- **Docs are the source of truth**: paths, commands and fields must match the current code; fix anything outdated in place.
+- **Docs first**: this applies only to the "three mandatory document categories" above; nothing else has a process gate.
+- **Archive policy**: documents that no longer apply move into `archive/` instead of staying in the main directories and misleading readers.
+- `bun run check:docs` fails when a new document is not registered in the index, or when a link is broken.

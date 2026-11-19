@@ -24,7 +24,7 @@ function extensionOf(url: string, fallback: string): string {
   }
 }
 
-/** 照片走 `name=orig`（原图）；已带扩展名的路径可以直接追加查询参数。 */
+/** Photos use `name=orig` (full-size image); paths that already carry an extension can take the query param appended directly. */
 function originalPhotoUrl(url: string): string {
   const normalized = normalizeMediaUrl(url)
   return normalized.includes('?')
@@ -32,7 +32,7 @@ function originalPhotoUrl(url: string): string {
     : `${normalized}?name=orig`
 }
 
-/** 视频取码率最高的 mp4 变体。 */
+/** Videos use the highest-bitrate mp4 variant. */
 function bestVideoUrl(media: MediaDetails): string | undefined {
   if (media.type === 'photo' || !media.video_info)
     return undefined
@@ -44,7 +44,7 @@ function bestVideoUrl(media: MediaDetails): string | undefined {
   return mp4[0]?.url
 }
 
-/** 纯函数：推文 → 待下载媒体清单（便于离线单测）。 */
+/** Pure function: tweet → list of media to download (easy to unit test offline). */
 export function planMediaTargets(
   tweet: EnrichedTweet,
   options: { photos?: boolean, videos?: boolean } = {},
@@ -85,7 +85,7 @@ export function planMediaTargets(
   return targets
 }
 
-/** 并发跑一组任务，保持结果顺序无关（每个任务自行上报事件）。 */
+/** Run a batch of tasks with bounded concurrency; result order doesn't matter (each task reports its own events). */
 async function runPool<T>(items: T[], limit: number, worker: (item: T) => Promise<void>): Promise<void> {
   let cursor = 0
   const runners = Array.from({
@@ -161,44 +161,44 @@ async function download(
 export const mediaDownload = defineCommand({
   meta: {
     name: 'download',
-    description: '下载一条推文的全部媒体（图片原图 / 最高码率 mp4；事件以 NDJSON 输出）',
+    description: 'Download all media from a tweet (full-size images / highest-bitrate mp4; events are emitted as NDJSON)',
   },
   args: {
     'id': {
       type: 'positional',
-      description: '推文 ID',
+      description: 'Tweet ID',
       required: true,
     },
     'out': {
       type: 'string',
-      description: '输出目录（默认 <pwd>/tweet-media）',
+      description: 'Output directory (default <pwd>/tweet-media)',
       alias: 'o',
     },
     'photos': {
       type: 'boolean',
       default: true,
-      description: '下载图片（--no-photos 跳过）',
+      description: 'Download photos (use --no-photos to skip)',
     },
     'videos': {
       type: 'boolean',
       default: true,
-      description: '下载视频 / GIF（--no-videos 跳过）',
+      description: 'Download videos / GIFs (use --no-videos to skip)',
     },
     'overwrite': {
       type: 'boolean',
-      description: '覆盖已存在文件（默认仍然写入同名文件；URL 是确定性的）',
+      description: 'Overwrite existing files (files are written anyway by default; the URLs are deterministic)',
     },
     'dry-run': {
       type: 'boolean',
-      description: '只规划不下载',
+      description: 'Plan only, do not download',
     },
     'concurrency': {
       type: 'string',
-      description: '并发下载数（默认 3，上限 8）',
+      description: 'Number of concurrent downloads (default 3, max 8)',
     },
     'media-timeout': {
       type: 'string',
-      description: '单个媒体下载超时 ms（默认 30000）',
+      description: 'Timeout per media download in ms (default 30000)',
     },
     ...clientArg,
   },
@@ -217,7 +217,7 @@ export const mediaDownload = defineCommand({
     const client = createClient(args)
     const tweet = enrich(await client.getTweet(tweetId))
     if (!tweet) {
-      throw new CliError(`Tweet ${tweetId} 不可用（tombstone 或结构变更）`, {
+      throw new CliError(`Tweet ${tweetId} is unavailable (tombstone or schema change)`, {
         code: 'REQUEST_FAILED',
       })
     }

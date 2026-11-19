@@ -1,38 +1,38 @@
-# NNN 标题
+# NNN Title
 
-- 日期：
-- 影响版本：
-- 严重程度：低 / 中 / 高
-- 根因归类：构建 / 依赖 / CI / 测试 / 文档 / 代码
+- Date:
+- Affected versions:
+- Severity: low / medium / high
+- Root cause category: build / dependencies / CI / tests / docs / code
 
-## 摘要
+## Summary
 
-一两句话说明发生了什么、影响是什么。
+One or two sentences on what happened and what the impact was.
 
-## 时间线
+## Timeline
 
-| 时间 | 事件 |
+| Time | Event |
 |---|---|
 |  |  |
 
-## 影响
+## Impact
 
-- 受影响用户/版本：
-- 数据或产物影响：
-- 是否可恢复：
+- Affected users/versions:
+- Data or artifact impact:
+- Recoverable:
 
-## 根因
+## Root Cause
 
-直接原因与根本原因分开写。根本原因要能解释「为什么之前的防护没挡住」。
+Write the direct cause and the underlying cause separately. The underlying cause must explain "why the existing safeguards did not catch this".
 
-## 修复
+## Fix
 
-- 临时处理：
-- 最终修复：
-- 验证方式：
+- Interim mitigation:
+- Final fix:
+- How it was verified:
 
-## 教训与后续
+## Lessons and Follow-up
 
-- [ ] 需要补的测试：
-- [ ] 需要补的文档：
-- [ ] 需要写入高频雷区清单的规则：
+- [ ] Tests that need to be added:
+- [ ] Docs that need to be added:
+- [ ] Rules that need to go into the recurring pitfalls checklist:

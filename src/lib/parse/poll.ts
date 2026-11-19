@@ -1,14 +1,16 @@
 import type { PollChoice, TweetPoll } from '../types/enriched'
 
 /**
- * 投票卡解析（纯函数）。
+ * Poll card parsing (pure function).
  *
- * X 没有独立的 poll 对象，投票信息全部挂在 `card.binding_values`：
- * - 纯文字：`poll2choice_text_only` / `poll3choice_text_only` / `poll4choice_text_only`
- * - 带图：  `pollNchoice_image`，syndication 实测还会带前缀 `{id}:poll_choice_images`
+ * X has no standalone poll object; all poll information hangs off `card.binding_values`:
+ * - text-only: `poll2choice_text_only` / `poll3choice_text_only` / `poll4choice_text_only`
+ * - with images: `pollNchoice_image`; syndication was also observed to prefix it with
+ *   `{id}:poll_choice_images`
  *
- * 判定以 `choice1_label` 为锚点，不依赖 card.name（GraphQL 与 syndication 命名不同）。
- * `counts_are_final` 是 BOOLEAN 类型（不是 string），需单独兼容。
+ * Detection is anchored on `choice1_label` and does not rely on card.name (GraphQL and
+ * syndication name things differently).
+ * `counts_are_final` is a BOOLEAN (not a string), so it needs separate handling.
  */
 
 interface BindingImage {
@@ -115,7 +117,7 @@ function pickChoiceColor(bindings: BindingMap, index: number): string | undefine
   return rgbToHex(palette?.[0]?.rgb)
 }
 
-/** 结束时间归一化为 ISO：兼容 `2026-11-09T21:56:31Z` 与 `12/19/2022 11:20:32`（UTC） */
+/** Normalizes the end time to ISO: accepts both `2026-11-09T21:56:31Z` and `12/19/2022 11:20:32` (UTC) */
 function normalizeUtcDate(raw?: string): string | undefined {
   if (!raw)
     return undefined

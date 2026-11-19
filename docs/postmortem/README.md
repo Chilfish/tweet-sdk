@@ -1,47 +1,47 @@
-# 事故复盘
+# Postmortems
 
-每次线上/发布事故后写一篇复盘，编号递增：`NNN-short-slug.md`。
+Write one postmortem after every production/release incident, with an incrementing number: `NNN-short-slug.md`.
 
-## 索引
+## Index
 
-| 编号 | 主题 | 根因归类 | 一句话教训 |
+| No. | Topic | Root cause category | One-line lesson |
 |---|---|---|---|
-| — | 暂无 | — | — |
+| — | None yet | — | — |
 
-## 高频雷区自查清单
+## Recurring Pitfalls Checklist
 
-写代码或改配置前先过一遍：
+Run through this before writing code or changing configuration:
 
-### 构建与产物
+### Build and Artifacts
 
-- `tsdown.config.ts` 是否误开 `exports: true`，覆盖了手工维护的 `exports`？
-- 新增子路径入口时，`entry` 与 `package.json#exports` 是否同步？
-- `platform: 'neutral'` 下是否引入了运行时 `node:*` 导入？
+- Does `tsdown.config.ts` accidentally enable `exports: true`, overwriting the hand-maintained `exports`?
+- When adding a new subpath entry, are `entry` and `package.json#exports` updated together?
+- Under `platform: 'neutral'`, was any runtime `node:*` import introduced?
 
-### 依赖与锁文件
+### Dependencies and Lockfile
 
-- 是否只改了 `package.json` 而忘记更新 `bun.lock`？
-- CI 使用 `--frozen-lockfile`，锁文件与 manifest 不一致会直接失败。
+- Did you only change `package.json` and forget to update `bun.lock`?
+- CI uses `--frozen-lockfile`; a lockfile that disagrees with the manifest fails immediately.
 
-### CI / 发布
+### CI / Release
 
-- action 版本是否真实存在？（`checkout@v4`、`setup-bun@v2`、`setup-node@v4`）
-- 发布是否走 OIDC，是否误加了 `NPM_TOKEN` 或 `registry-url`？
-- `CHANGELOG.md` 是否有对应版本节？`package.json#version` 与 tag 是否一致？
+- Do the action versions actually exist? (`checkout@v4`, `setup-bun@v2`, `setup-node@v4`)
+- Does the release go through OIDC, and was `NPM_TOKEN` or `registry-url` added by mistake?
+- Does `CHANGELOG.md` have a section for the corresponding version? Do `package.json#version` and the tag match?
 
-### 测试
+### Tests
 
-- 新增逻辑是否带测试？
-- 是否出现依赖真实网络或真实时间的测试？
+- Does the new logic come with tests?
+- Are there any tests that depend on the real network or on real time?
 
-### 文档
+### Docs
 
-- 公开契约、构建流程、事故修复是否同步了文档？
-- 文档中的命令、路径、字段是否仍与代码一致？
+- Were the docs updated for the public contract, the build process, and the incident fix?
+- Do the commands, paths, and fields in the docs still match the code?
 
-## 写作要求
+## Writing Requirements
 
-- 事实优先：时间线、证据、影响范围。
-- 根因写到可执行的层面，不写「粗心」。
-- 每条教训必须能落到「雷区清单」或 `AGENTS.md` 中。
-- 使用 [TEMPLATE.md](./TEMPLATE.md)。
+- Facts first: timeline, evidence, blast radius.
+- Write root causes at an actionable level; do not write "carelessness".
+- Every lesson must land somewhere: either the recurring pitfalls checklist or `AGENTS.md`.
+- Use [TEMPLATE.md](./TEMPLATE.md).

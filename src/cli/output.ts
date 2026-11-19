@@ -1,6 +1,6 @@
 import { configError } from './error'
 
-/** 查询命令的输出格式；`json` 是默认值，保持脚本 / 管道兼容。 */
+/** Output format for query commands; `json` is the default, keeping script / pipe compatibility. */
 export type OutputFormat = 'json' | 'markdown'
 
 const FORMAT_ALIASES: Record<string, OutputFormat> = {
@@ -9,16 +9,16 @@ const FORMAT_ALIASES: Record<string, OutputFormat> = {
   md: 'markdown',
 }
 
-/** 各命令共用的 `--format` / `-f` 参数定义。 */
+/** Shared `--format` / `-f` argument definition. */
 export const outputFormatArg = {
   format: {
     type: 'string',
-    description: '输出格式：json | markdown（默认 json；md 同 markdown）',
+    description: 'Output format: json | markdown (default json; md is an alias for markdown)',
     alias: 'f',
   },
 } as const
 
-/** 解析 `--format` 取值；未指定时返回 `json`，未知取值直接报错。 */
+/** Resolve the `--format` value; returns `json` when unset and throws on unknown values. */
 export function parseOutputFormat(value: unknown): OutputFormat {
   if (value === undefined || value === '')
     return 'json'
@@ -37,19 +37,19 @@ export function parseOutputFormat(value: unknown): OutputFormat {
   return format
 }
 
-/** 非 JSON 格式的渲染器；每个命令只提供自己支持的那几种。 */
+/** Renderers for the non-JSON formats; each command supplies only the ones it supports. */
 export interface OutputRenderers<T> {
   markdown: (value: T) => string
 }
 
-/** 按格式把数据渲染成字符串（不写 stdout，便于单测）。 */
+/** Render data as a string in the given format (no stdout write, so it stays unit-testable). */
 export function renderOutput<T>(value: T, format: OutputFormat, renderers: OutputRenderers<T>): string {
   if (format === 'json')
     return JSON.stringify(value, null, 2)
   return renderers[format](value)
 }
 
-/** 解析一次 `--format`，返回命令内复用的打印函数。 */
+/** Resolve `--format` once and return a print function reused throughout the command. */
 export function createPrinter(args: Record<string, unknown>): <T>(value: T, renderers: OutputRenderers<T>) => void {
   const format = parseOutputFormat(args.format)
   return (value, renderers) => {

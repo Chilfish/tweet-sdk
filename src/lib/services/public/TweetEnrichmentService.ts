@@ -2,13 +2,14 @@ import type { EnrichedTweet, RawTweet } from '../../types/enriched'
 import { enrichTweet } from '../../parse/tweet'
 
 /**
- * 推文数据增强服务
- * 职责：将原始推文数据转换为富文本推文，处理引用推文等业务逻辑
+ * Tweet enrichment service.
+ * Responsibility: turn raw tweet data into enriched tweets and handle
+ * business logic such as quoted tweets.
  */
 export class TweetEnrichmentService {
   /**
-   * 增强单条推文数据
-   * @returns 增强后的推文，失败时返回 null
+   * Enrich a single raw tweet.
+   * @returns The enriched tweet, or null when enrichment fails
    */
   enrichSingleTweet(rawTweet: RawTweet): EnrichedTweet | null {
     const enrichedTweet = enrichTweet(rawTweet)
@@ -16,7 +17,7 @@ export class TweetEnrichmentService {
       return null
     }
 
-    // 处理引用推文
+    // Handle the quoted tweet
     if (rawTweet.quoted_status_result?.result) {
       const quotedTweet = enrichTweet(rawTweet.quoted_status_result.result)
       if (quotedTweet) {
@@ -28,7 +29,7 @@ export class TweetEnrichmentService {
   }
 
   /**
-   * 批量增强推文数据
+   * Batch-enrich raw tweets.
    */
   enrichTweets(rawTweets: RawTweet[]): EnrichedTweet[] {
     return rawTweets
@@ -37,9 +38,9 @@ export class TweetEnrichmentService {
   }
 
   /**
-   * 增强用户时间线推文，过滤广告内容
-   * @param rawTweets - 原始推文列表
-   * @param userId - 用户ID，用于过滤非用户发布的广告内容
+   * Enrich user timeline tweets and filter out advertisements.
+   * @param rawTweets - List of raw tweets
+   * @param userId - User ID, used to filter out advertisements not posted by that user
    */
   enrichUserTimelineTweets(rawTweets: RawTweet[], userId: string): EnrichedTweet[] {
     return this.enrichTweets(rawTweets)
@@ -47,7 +48,7 @@ export class TweetEnrichmentService {
   }
 
   /**
-   * 判断推文是否为广告
+   * Determine whether a tweet is an advertisement.
    * @private
    */
   private isAdvertisement(tweet: EnrichedTweet, userId: string): boolean {

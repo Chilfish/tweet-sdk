@@ -1,37 +1,37 @@
-# 贡献者行为准则
+# Contributor Code of Conduct
 
-## 我们的承诺
+## Our pledge
 
-为了营造开放、友好的环境，我们承诺无论年龄、体型、残障、族裔、性别认同与表达、经验水平、国籍、外貌、种族、宗教或性取向，参与者都能获得无骚扰的体验。
+In order to foster an open and welcoming environment, we pledge that participation in our project is a harassment-free experience for everyone, regardless of age, body size, disability, ethnicity, gender identity and expression, level of experience, nationality, personal appearance, race, religion, or sexual orientation.
 
-## 行为标准
+## Standards of behavior
 
-有助于营造积极环境的行为：
+Behavior that contributes to a positive environment:
 
-- 使用友好与包容的语言
-- 尊重不同的观点与经验
-- 优雅地接受建设性批评
-- 关注对社区最有利的事情
-- 对其他社区成员表现出同理心
+- Using welcoming and inclusive language
+- Respecting differing viewpoints and experiences
+- Gracefully accepting constructive criticism
+- Focusing on what is best for the community
+- Showing empathy toward other community members
 
-不可接受的行为：
+Unacceptable behavior:
 
-- 性化语言或图像，以及不受欢迎的性关注
-- 钓鱼、侮辱、贬损性评论、人身或政治攻击
-- 公开或私下的骚扰
-- 未经明确许可发布他人的私人信息
-- 其他在专业环境中合理认定为不当的行为
+- Sexualized language or imagery, and unwelcome sexual attention
+- Trolling, insults, derogatory comments, personal or political attacks
+- Public or private harassment
+- Publishing others' private information without explicit permission
+- Other conduct which could reasonably be considered inappropriate in a professional setting
 
-## 责任
+## Responsibilities
 
-维护者有权删除、编辑或拒绝不符合本准则的评论、提交、代码、issue 和其他贡献，并在适当时说明原因。
+Maintainers have the right to remove, edit, or reject comments, commits, code, issues, and other contributions that do not comply with this Code of Conduct, and to state the reasons when appropriate.
 
-## 适用范围
+## Scope
 
-本准则适用于项目空间以及个人在公共空间代表项目时。
+This Code of Conduct applies within project spaces and when an individual represents the project in public spaces.
 
-## 执行
+## Enforcement
 
-可通过 <https://github.com/Chilfish/tweet-sdk/issues> 联系维护者。所有投诉都会被审查与调查，并作出必要且适当的回应。维护者有义务对事件报告者保密。
+You can reach the maintainers at <https://github.com/Chilfish/tweet-sdk/issues>. All complaints will be reviewed and investigated, and a response that is necessary and appropriate will follow. Maintainers are obligated to keep the reporter of an incident confidential.
 
-本准则改编自 [Contributor Covenant](https://www.contributor-covenant.org/) 2.1 版。
+This Code of Conduct is adapted from version 2.1 of the [Contributor Covenant](https://www.contributor-covenant.org/).

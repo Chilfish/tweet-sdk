@@ -1,51 +1,51 @@
-# Git 工作流
+# Git workflow
 
-## 分支
+## Branches
 
-- `main` 为唯一长期分支，始终可发布。
-- 功能与修复使用短生命周期分支：`feat/<scope>`、`fix/<scope>`。
-- 合并前必须 rebase 到最新 `main`，保持线性历史。
+- `main` is the only long-lived branch and is always releasable.
+- Features and fixes use short-lived branches: `feat/<scope>`, `fix/<scope>`.
+- Rebase onto the latest `main` before merging to keep history linear.
 
-## 提交信息
+## Commit messages
 
-Conventional Commits，格式：
+Conventional Commits, in the form:
 
 ```
-type(scope): 简短中文摘要
+type(scope): short imperative summary
 ```
 
-常用 type：
+Common types:
 
-| type | 用途 |
+| type | Purpose |
 |---|---|
-| `feat` | 新功能 |
-| `fix` | 修复 |
-| `refactor` | 重构，不改行为 |
-| `test` | 测试 |
-| `docs` | 文档 |
-| `build` | 构建/依赖 |
-| `ci` | 流水线 |
-| `chore` | 杂项 |
+| `feat` | new feature |
+| `fix` | bug fix |
+| `refactor` | restructuring without behavior change |
+| `test` | tests |
+| `docs` | documentation |
+| `build` | build/dependencies |
+| `ci` | pipeline |
+| `chore` | misc |
 
-- 一个逻辑单元一个提交，不攒到最后。
-- 大改动按模块或文件拆成 3–4 个提交。
-- 不写「修复 bug」这类无法定位的摘要；写清对象与行为。
+- One commit per logical unit; do not save everything for the end.
+- Split large changes into 3–4 commits by module or file.
+- Do not write summaries like "fix bug" that cannot be located; state the object and the behavior.
 
-## Git hooks（lefthook）
+## Git hooks (lefthook)
 
-配置见 `lefthook.yml`，`bun install` 时通过 `prepare: lefthook install` 安装。
+Configuration lives in `lefthook.yml` and is installed by `prepare: lefthook install` during `bun install`.
 
-| 钩子 | 行为 |
+| Hook | Behavior |
 |---|---|
-| pre-commit | 对暂存文件运行 `eslint --fix`，自动回写暂存区 |
-| pre-push | 运行 `bun run build` |
+| pre-commit | runs `eslint --fix` on staged files and writes the result back to the index |
+| pre-push | runs `bun run build` |
 
-- 不推荐 `--no-verify`；确实需要时在 PR 说明原因。
-- 完整门禁（typecheck / test / coverage）在 CI 执行，hooks 只负责快速反馈。
+- `--no-verify` is discouraged; if it is truly necessary, explain why in the PR.
+- The full gates (typecheck / test / coverage) run in CI; hooks only provide fast feedback.
 
-## PR
+## PRs
 
-- 标题遵循提交信息格式。
-- 描述包含：动机、行为变化、验证方式。
-- 公开契约变化必须同时更新 `CHANGELOG.md` 与相关文档。
-- diff 超过 10 个文件或 200 行时，说明拆分理由或拆分提交。
+- The title follows the commit message format.
+- The description covers: motivation, behavior changes, how it was verified.
+- A public contract change must update `CHANGELOG.md` and the related docs in the same PR.
+- When the diff exceeds 10 files or 200 lines, explain why it is not split or split it into separate commits.

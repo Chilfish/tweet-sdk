@@ -1,53 +1,53 @@
-# 架构
+# Architecture
 
-## 目标
+## Goal
 
-X（Twitter）取数与推文富化的 SDK。core 平台无关，Node 与 UI 能力分别落在 `./node` 与 `./react` 子路径，站点只做装配。
+An SDK for X (Twitter) data extraction and tweet enrichment. The core is platform-neutral; Node and CLI capabilities live in the `./node` and `./cli` subpaths respectively, and applications only do assembly.
 
-## 分层
+## Layers
 
 ```
-src/index.ts            core 公开入口（barrel，只做 re-export）
-src/node.ts             ./node 公开入口
+src/index.ts            core public entry (barrel, re-exports only)
+src/node.ts             ./node public entry
 src/lib/
-  http/                 传输契约与 fetch 实现（无平台依赖）
-  transaction.ts        x-client-transaction-id（可注入 provider）
-  errors.ts             类型化错误
-  pool/                 RettiwtPool（冷却 / 退避 / 负载均衡）
-  client.ts             TwitterClient 门面
+  http/                 transport contract and fetch implementation (no platform dependencies)
+  transaction.ts        x-client-transaction-id (injectable provider)
+  errors.ts             typed errors
+  pool/                 RettiwtPool (cooldown / backoff / load balancing)
+  client.ts             TwitterClient facade
   collections/          Groups / Requests / Extractors
-  enums/                ResourceType 等
-  models/               请求参数、认证、数据模型
-  requests/             HTTP 请求描述符（返回 HttpRequest）
-  services/             FetcherService 与高层服务
-  parse/                纯函数解析与富化
-  types/                raw（上游形态）与 enriched（对外契约）
-  media-url.ts          媒体 URL 归一化
-src/node/               Node 适配实现
-tests/                  测试，目录镜像 src/
-docs/                   内部文档
+  enums/                ResourceType and friends
+  models/               request options, auth, data models
+  requests/             HTTP request descriptors (return HttpRequest)
+  services/             FetcherService and high-level services
+  parse/                pure parsing and enrichment functions
+  types/                raw (upstream shape) and enriched (public contract)
+  media-url.ts          media URL normalization
+src/node/               Node adapter implementation
+tests/                  tests, directory mirrors src/
+docs/                   internal docs
 ```
 
-依赖方向严格单向：
+Dependency direction is strictly one-way:
 
 ```
 index.ts / node.ts  →  client / pool / parse  →  services  →  requests / collections  →  types
 ```
 
-- 解析层（`parse/`）不依赖 `services/`，也不做 IO；需要上游数据时由调用方注入（如 `attachSpaceDetails` 的 `fetchSpace`）。
-- `helpers` 只保留纯工具（`JsonUtils`）。
-- `src/index.ts` / `src/node.ts` 是唯一对外承诺的入口；`src/lib/**` 内部路径不属于公开 API。
+- The parse layer (`parse/`) does not depend on `services/` and performs no IO; upstream data is injected by the caller (e.g. `fetchSpace` for `attachSpaceDetails`).
+- `helpers` only keeps pure utilities (`JsonUtils`).
+- `src/index.ts` / `src/node.ts` are the only promised entry points; internal paths under `src/lib/**` are not public API.
 
-## 公开面
+## Public surface
 
-- 只使用具名导出，禁止 `export default`。
-- 类型与值分开导出：`export type { ... }` / `export { ... }`。
-- `package.json#exports` 决定发布面，`tests/exports.test.ts` 锁定其形状。
-- 新增导出视为公开契约变化，必须更新 CHANGELOG、[api.md](../reference/api.md) 与 `tests/exports.test.ts`。
+- Use named exports only; `export default` is forbidden.
+- Keep types and values in separate exports: `export type { ... }` / `export { ... }`.
+- `package.json#exports` defines the published surface, and `tests/exports.test.ts` locks its shape.
+- A new export is a public contract change, so CHANGELOG, [api.md](../reference/api.md) and `tests/exports.test.ts` must be updated.
 
-## 传输层
+## Transport layer
 
-`HttpClient` 是唯一传输契约：
+`HttpClient` is the only transport contract:
 
 ```ts
 interface HttpClient {
@@ -55,25 +55,25 @@ interface HttpClient {
 }
 ```
 
-- 默认实现用全局 `fetch`，`AbortSignal.timeout` 处理超时。
-- 请求描述符（`requests/*`）只描述 `method` / `url` / `params` / `data` / `headers`，不绑定任何客户端。
-- 代理、文件读取、`proxy dispatcher` 等平台能力只出现在 `src/node/`。
-- transaction id 通过 `TidProvider` 注入：默认实现抓取 X 页面壳，受限运行时（如无法解析 HTML）可换成静态实现。
+- The default implementation uses the global `fetch`, with `AbortSignal.timeout` handling timeouts; the default timeout is 30s, and `0` disables it.
+- Request descriptors (`requests/*`) only describe `method` / `url` / `params` / `data` / `headers` and bind to no client.
+- Platform capabilities such as proxies, file reads and the `proxy dispatcher` appear only in `src/node/`.
+- The transaction id is injected through `TidProvider`: the default implementation fetches the X page shell, and restricted runtimes (e.g. ones that cannot parse HTML) can swap in a static implementation.
 
-## 平台无关
+## Platform neutrality
 
-构建目标为 `platform: 'neutral'`，不内联 Node 内置模块：
+The build target is `platform: 'neutral'` and does not inline Node built-in modules:
 
-- 源码里可以 `import type` 引用 `node:*` 类型。
-- core 代码不得有运行时 `node:*` 导入；确需 Node 能力时放到 `./node` 入口。
-- 运行时依赖只有 `linkedom` / `x-client-transaction-id`（core，纯 JS）与 `undici`（`./node`，懒加载）。
+- Source code may reference `node:*` types via `import type`.
+- Core code must not contain runtime `node:*` imports; when Node capabilities are genuinely needed, put them in the `./node` entry.
+- Runtime dependencies are only `linkedom` / `x-client-transaction-id` (core, pure JS) and `undici` (optional peer, `./node`, lazy-loaded).
 
-## 扩展方式
+## How to extend
 
-| 需求 | 做法 |
+| Need | Approach |
 |---|---|
-| 增加端点 | `requests/<domain>.ts` 新增描述符 → `collections/Requests.ts` 注册 → `enums/Resource.ts` 加资源 → `collections/Groups.ts` 分类 |
-| 增加子路径入口 | 新增 `src/<name>.ts`，在 tsdown `entry` 与 `package.json#exports` 同步声明 |
-| 增加平台能力 | 放在 `src/node/` 或新的子路径入口，core 只接受注入 |
-| 引入运行时依赖 | 同步评估 ESM/CJS 双格式、tree-shaking、`sideEffects` 与平台归属 |
-| 拆分多包 | 迁移到 workspace，并把版本集中到 catalog |
+| Add an endpoint | add a descriptor in `requests/<domain>.ts` → register it in `collections/Requests.ts` → add the resource in `enums/Resource.ts` → classify it in `collections/Groups.ts` |
+| Add a subpath entry | add `src/<name>.ts` and declare it in both the tsdown `entry` and `package.json#exports` |
+| Add a platform capability | put it in `src/node/` or a new subpath entry; core only accepts injection |
+| Add a runtime dependency | evaluate dual ESM/CJS output, tree-shaking, `sideEffects` and platform ownership at the same time |
+| Split into multiple packages | migrate to a workspace and centralize versions in a catalog |

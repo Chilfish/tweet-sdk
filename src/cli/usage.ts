@@ -1,11 +1,12 @@
 import type { Arg, ArgsDef, CommandDef, CommandMeta, Resolvable, SubCommandsDef } from 'citty'
 
 /**
- * 帮助信息渲染。
+ * Help text rendering.
  *
- * citty 自带的 `renderUsage` 按 `String.length` 对齐列，中文字符在终端占两列，
- * COMMANDS / OPTIONS 表格会错位；多行 description 还会被当成一个单元格补齐。
- * 这里按显示宽度重新对齐，并把多行描述拆成续行。
+ * citty's built-in `renderUsage` aligns columns by `String.length`, but CJK characters take two
+ * terminal columns, so the COMMANDS / OPTIONS tables end up misaligned; multi-line descriptions are
+ * also padded as if they were a single cell. This realigns by display width and splits multi-line
+ * descriptions into continuation lines.
  */
 
 const ANSI = {
@@ -26,7 +27,7 @@ function paint(open: number, close: number, text: string): string {
     : `\u001B[${open}m${text}\u001B[${close}m`
 }
 
-/** 零宽字符（组合符号 / 变体选择符）：不占终端列。 */
+/** Zero-width characters (combining marks / variation selectors): occupy no terminal columns. */
 function isZeroWidth(code: number): boolean {
   return (code >= 0x0300 && code <= 0x036F)
     || (code >= 0x200B && code <= 0x200F)
@@ -34,7 +35,7 @@ function isZeroWidth(code: number): boolean {
     || code === 0xFEFF
 }
 
-/** 宽字符（CJK / 全角 / emoji）：占两列。 */
+/** Wide characters (CJK / fullwidth / emoji): occupy two columns. */
 function isWide(code: number): boolean {
   return (code >= 0x1100 && code <= 0x115F)
     || (code >= 0x2E80 && code <= 0xA4CF)
@@ -56,7 +57,7 @@ function stripAnsi(text: string): string {
   return text.replace(ANSI_PATTERN, '')
 }
 
-/** 字符串在终端里占的列数（CJK 记 2 列）。 */
+/** Number of terminal columns the string occupies (CJK counts as 2). */
 export function displayWidth(text: string): number {
   let width = 0
   for (const char of stripAnsi(text)) {
@@ -77,7 +78,7 @@ function padTo(text: string, width: number): string {
     : text
 }
 
-/** 两列表格：第一列按宽度对齐，第二列左对齐，续行缩进到第二列起点。 */
+/** Two-column table: the first column is padded to width, the second is left-aligned, and continuation lines are indented to the second column. */
 function renderTable(rows: Array<[string, string]>, prefix = '  '): string {
   const labelWidth = rows.reduce((max, [label]) => Math.max(max, displayWidth(label)), 0)
   const lines: string[] = []
@@ -142,7 +143,7 @@ function isNegativeName(name: string): boolean {
   return /^no[-A-Z]/.test(name)
 }
 
-/** 渲染 `--help`（结构与 citty 的 `renderUsage` 一致）。 */
+/** Render `--help` (same structure as citty's `renderUsage`). */
 export async function renderCliUsage<T extends ArgsDef = ArgsDef>(command: CommandDef<T>, parent?: CommandDef<T>): Promise<string> {
   const meta = (await resolveValue(command.meta)) ?? {}
   const parentMeta = (await resolveValue(parent?.meta)) ?? {}
@@ -241,7 +242,7 @@ export async function renderCliUsage<T extends ArgsDef = ArgsDef>(command: Comma
   return lines.join('\n')
 }
 
-/** `--help` 的入口（按显示宽度对齐）。 */
+/** `--help` entry point (aligned by display width). */
 export async function showCliUsage<T extends ArgsDef = ArgsDef>(command: CommandDef<T>, parent?: CommandDef<T>): Promise<void> {
   console.log(`${await renderCliUsage(command, parent)}\n`)
 }

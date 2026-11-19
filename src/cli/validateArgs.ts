@@ -2,14 +2,14 @@ import type { ArgDef, ArgsDef, CommandDef, CommandMeta, Resolvable, SubCommandsD
 import { CliError } from './error'
 
 /**
- * 未知参数检查。
+ * Unknown flag validation.
  *
- * citty 的 `parseArgs` 对未知 flag 静默忽略，`--formt`（少一个 a）会变成
- * 「什么都没传」并悄悄回退到默认格式。脚本 / agent 调用时极难发现，因此
- * 在 `runMain` 之前统一校验一次：未知 flag 直接 `CONFIG_INVALID`。
+ * citty's `parseArgs` silently ignores unknown flags, so `--formt` (one missing letter) becomes
+ * "nothing was passed" and quietly falls back to the default. That is very hard to spot from scripts /
+ * agents, so we validate once before `runMain`: unknown flags fail with `CONFIG_INVALID`.
  */
 
-/** citty 内建 flag。 */
+/** Flags built into citty. */
 const BUILTIN_FLAGS = new Set(['help', 'h', 'version', 'v'])
 
 function toArray<T>(value: T | T[] | undefined): T[] {
@@ -26,7 +26,7 @@ async function resolveValue<T>(value: Resolvable<T> | undefined): Promise<T | un
   return await value
 }
 
-/** 命令行里出现的一个 flag 名（已去掉前缀与 `=value`）。 */
+/** A single flag name as it appears on the command line (prefix and `=value` already stripped). */
 function flagName(token: string): string {
   const bare = token.replace(/^-+/, '')
   const eq = bare.indexOf('=')
@@ -39,7 +39,7 @@ function hasInlineValue(token: string): boolean {
   return token.includes('=')
 }
 
-/** 参数定义里能接受的全部名字（主名 + 别名 + `no-` 变体）。 */
+/** Every name an argument definition accepts (primary name + aliases + `no-` variants). */
 function acceptedNames(args: ArgsDef | undefined): Map<string, string> {
   const names = new Map<string, string>()
   for (const [name, def] of Object.entries(args ?? {})) {
@@ -54,13 +54,13 @@ function acceptedNames(args: ArgsDef | undefined): Map<string, string> {
   return names
 }
 
-/** 该参数是否要吃掉下一个 token。 */
+/** Whether this argument consumes the next token as its value. */
 function takesValue(args: ArgsDef | undefined, canonical: string): boolean {
   const def = (args ?? {})[canonical] as ArgDef | undefined
   return def?.type === 'string' || def?.type === 'enum'
 }
 
-/** 在整棵命令树里找某个 flag（用于提示「参数写在子命令之后」）。 */
+/** Find a flag anywhere in the command tree (used to hint that the flag belongs after the subcommand). */
 async function hasOptionInTree(command: CommandDef, name: string): Promise<boolean> {
   const args = await resolveValue(command.args as Resolvable<ArgsDef> | undefined)
   if (acceptedNames(args).has(name))
@@ -73,7 +73,7 @@ async function hasOptionInTree(command: CommandDef, name: string): Promise<boole
   return false
 }
 
-/** 编辑距离，用于给未知 flag 找最接近的候选。 */
+/** Edit distance, used to find the closest candidate for an unknown flag. */
 function distance(a: string, b: string): number {
   const rows = a.length + 1
   const cols = b.length + 1
@@ -98,7 +98,7 @@ function closest(name: string, candidates: Iterable<string>): string | undefined
   let best: string | undefined
   let bestDistance = Number.POSITIVE_INFINITY
   for (const candidate of candidates) {
-    // 单字母别名不作候选：提示 "--foo → --f" 只会更迷惑。
+    // Single-letter aliases are not candidates: suggesting "--foo → --f" only adds confusion.
     if (candidate.length < 3)
       continue
     const value = distance(name, candidate)
@@ -126,16 +126,16 @@ function unknownFlagError(name: string, command: string, accepted: Iterable<stri
         ...(suggestion
           ? { suggestion }
           : {}),
-        hint: '未知参数会被 citty 静默忽略，所以这里直接报错；用 --help 查看该命令支持的参数',
+        hint: 'citty silently ignores unknown flags, so this fails fast instead; run --help to see the flags this command supports',
       },
     },
   )
 }
 
 /**
- * 校验命令行里没有该（子）命令未声明的 flag。
+ * Validate that the command line contains no flags undeclared by this (sub)command.
  *
- * @param root 命令树根（`main`）
+ * @param root Command tree root (`main`)
  * @param rawArgs `process.argv.slice(2)`
  */
 export async function assertKnownFlags(root: CommandDef, rawArgs: readonly string[]): Promise<void> {
@@ -174,13 +174,13 @@ export async function assertKnownFlags(root: CommandDef, rawArgs: readonly strin
     const canonical = accepted.get(name) ?? accepted.get(normalized)
     if (canonical === undefined) {
       const error = unknownFlagError(name, commandName, accepted.keys())
-      // 参数存在、只是写在了子命令之前（citty 会静默忽略）——给出更明确的修法。
+      // The flag exists but was written before the subcommand (citty ignores it silently) — give an explicit fix.
       if (await hasOptionInTree(root, name))
-        error.context.next = `参数由子命令自己声明：把 --${name} 写在子命令之后`
+        error.context.next = `The flag is declared by the subcommand itself: put --${name} after the subcommand`
       throw error
     }
 
-    // 值型参数的下一个 token 是它的值，不当成 flag 校验（`--since -1` 不误报）。
+    // The token after a value-taking flag is its value, so don't validate it as a flag (`--since -1` stays quiet).
     if (!hasInlineValue(token) && takesValue(args, canonical))
       index += 1
   }

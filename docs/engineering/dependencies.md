@@ -1,24 +1,26 @@
-# 依赖
+# Dependencies
 
-## 原则
+## Principles
 
-- **运行时依赖要少且可解释**：新增运行时依赖必须在 PR 中说明必要性、体积、平台归属与替代方案。
-- **工具链进 devDependencies**：构建、测试、lint、发布脚本全部视为开发依赖。
-- **版本用 caret**：`^x.y.z`，锁定交给 `bun.lock`。
-- **不手工编辑锁文件**。
+- **Few, explainable runtime dependencies**: a new runtime dependency must justify its necessity, size, platform ownership and alternatives in the PR.
+- **Toolchain goes in devDependencies**: build, test, lint and release scripts all count as development dependencies.
+- **Caret versions**: `^x.y.z`; pinning is left to `bun.lock`.
+- **Never edit the lockfile by hand**.
 
-## 分类
+## Categories
 
-| 类别 | 位置 | 示例 |
+| Category | Location | Examples |
 |---|---|---|
-| 运行时（core，平台无关） | `dependencies` | `linkedom`、`x-client-transaction-id` |
-| 运行时（仅 `./node`） | `dependencies` | `undici`（懒加载） |
-| 开发工具 | `devDependencies` | tsdown、vitest、eslint |
-| 类型 | `devDependencies` | `@types/node`、`@types/bun` |
+| Runtime (core, platform-neutral) | `dependencies` | `linkedom`, `x-client-transaction-id` |
+| Runtime (only `./node`) | `peerDependencies` (optional) | `undici` (lazy-loaded) |
+| Development tooling | `devDependencies` | tsdown, vitest, eslint |
+| Types | `devDependencies` | `@types/node`, `@types/bun` |
 
-运行时依赖的归属必须写清：只能由 `./node` 触达的依赖不得在 core 运行时导入，否则会破坏 `platform: 'neutral'`。
+`undici` is an optional peer (`peerDependenciesMeta.undici.optional: true`), so consumers who do not use the Node proxy support do not have to install it. It is still listed in `neverBundle` and is only imported lazily from `./node`.
 
-## 升级流程
+Dependency ownership must be explicit: a dependency reachable only from `./node` must not be imported by the core at runtime, otherwise `platform: 'neutral'` breaks.
+
+## Upgrade flow
 
 ```bash
 bun outdated
@@ -27,22 +29,22 @@ bun run check
 git diff bun.lock
 ```
 
-- 升级后必须跑 `bun run check` 与 `bun run check:docs`。
-- 主版本升级需记录在 `CHANGELOG.md` 的「变更」或「升级提示」中。
-- 升级失败时回退依赖，不要用 `--force` 绕过 peer 冲突。
+- `bun run check` and `bun run check:docs` must pass after an upgrade.
+- Major upgrades must be recorded in `CHANGELOG.md` under "Changes" or "Upgrade notes".
+- If an upgrade fails, roll the dependency back; do not use `--force` to bypass peer conflicts.
 
-## 新增依赖检查表
+## New dependency checklist
 
-- [ ] 是否真的需要？能否用标准库或现有依赖实现？
-- [ ] 许可证与项目兼容（MIT）？
-- [ ] 是否支持 ESM？是否需要 CJS 产物？
-- [ ] 是否引入 Node 内置模块？会破坏 `platform: 'neutral'`，只能放在 `./node`。
-- [ ] 是否已加入 `neverBundle`，避免被打进构建产物？
-- [ ] 是否显著增大安装体积？
-- [ ] 是否已加入 `dependencies` / `devDependencies` 并更新 `bun.lock`？
+- [ ] Is it really needed? Can it be done with the standard library or an existing dependency?
+- [ ] Is the license compatible with the project (MIT)?
+- [ ] Does it support ESM? Is a CJS build required?
+- [ ] Does it pull in Node built-in modules? That breaks `platform: 'neutral'`, so it can only live in `./node`.
+- [ ] Has it been added to `neverBundle` so it is not inlined into the build output?
+- [ ] Does it noticeably increase the install size?
+- [ ] Has it been added to `dependencies` / `devDependencies` with `bun.lock` updated?
 
-## 自动升级
+## Automated upgrades
 
-`.github/dependabot.yml` 每周检查 bun 生态依赖。Dependabot PR 必须通过全量 CI 才能合并。
+`.github/dependabot.yml` checks the bun ecosystem dependencies every week. A Dependabot PR must pass the full CI before it can be merged.
 
-`typescript` 当前忽略 `>=7`：`typescript-eslint` 尚未支持 TS 7，等上游支持后移除该 ignore。
+`typescript` currently ignores `>=7`: `typescript-eslint` does not support TS 7 yet, so the ignore stays until upstream catches up.

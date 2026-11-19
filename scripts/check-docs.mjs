@@ -1,7 +1,7 @@
 /**
- * 文档门禁：
- * 1. 所有本地 markdown 链接必须指向真实文件
- * 2. docs/ 下的文档必须在 docs/README.md 索引中登记
+ * Documentation gate:
+ * 1. Every local markdown link must point to a real file
+ * 2. Every doc under docs/ must be registered in the docs/README.md index
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
@@ -48,14 +48,14 @@ for (const file of markdownFiles) {
     const absolute = resolve(dirname(file), target)
     if (existsSync(absolute)) {
       if (statSync(absolute).isDirectory() && !existsSync(join(absolute, 'README.md')))
-        failures.push(`${relativeFile}: 目录链接缺少 README.md -> ${rawTarget}`)
+        failures.push(`${relativeFile}: directory link is missing a README.md -> ${rawTarget}`)
       continue
     }
 
     if (existsSync(`${absolute}.md`))
       continue
 
-    failures.push(`${relativeFile}: 链接指向不存在的文件 -> ${rawTarget}`)
+    failures.push(`${relativeFile}: link points to a file that does not exist -> ${rawTarget}`)
   }
 }
 
@@ -72,14 +72,14 @@ for (const file of markdownFiles) {
 
   const name = relativeFile.slice('docs/'.length)
   if (!indexContent.includes(name))
-    failures.push(`${relativeFile}: 未在 docs/README.md 索引中登记`)
+    failures.push(`${relativeFile}: not registered in the docs/README.md index`)
 }
 
 if (failures.length > 0) {
-  console.error('check-docs 失败:')
+  console.error('check-docs failed:')
   for (const failure of failures)
     console.error(`  - ${failure}`)
   process.exit(1)
 }
 
-console.log(`check-docs 通过（${markdownFiles.length} 个文档）`)
+console.log(`check-docs passed (${markdownFiles.length} documents)`)

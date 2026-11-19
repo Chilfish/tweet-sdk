@@ -91,7 +91,7 @@ export function transformUserResponse(sourceData: RawTweet): TweetUser | null {
   return transformedUser
 }
 
-// 统一的图片 Key 优先级列表，按清晰度从高到低排列
+// Unified image key priority list, ordered from highest to lowest resolution
 const IMAGE_KEYS_PRIORITY = [
   // Unified / Large
   'photo_image_full_size_original',
@@ -112,12 +112,12 @@ const IMAGE_KEYS_PRIORITY = [
 ]
 
 /**
- * 辅助函数：从 binding_values Map 中提取字符串值
+ * Helper: pulls a string value out of the binding_values Map
  */
 const getStr = (map: Map<string, any>, key: string): string | undefined => map.get(key)?.string_value
 
 /**
- * 辅助函数：从 binding_values Map 中按优先级提取最佳图片 URL
+ * Helper: picks the best image URL out of the binding_values Map by priority
  */
 function getBestImage(map: Map<string, any>): string | undefined {
   for (const key of IMAGE_KEYS_PRIORITY) {
@@ -128,9 +128,9 @@ function getBestImage(map: Map<string, any>): string | undefined {
   return undefined
 }
 
-/** 零宽字符（官方空标题常用 \u200b 占位），清洗后为空视为无标题 */
+/** Zero-width characters (the official empty title often uses a \u200b placeholder); empty after cleaning counts as no title */
 const INVISIBLE_CHARS_RE = /[\u200B-\u200D\uFEFF]/g
-/** media id 的 `3_` / `13_` 前缀（部分变体的 media_entities 键不带前缀） */
+/** The `3_` / `13_` prefix on media ids (the media_entities keys of some variants omit it) */
 const MEDIA_ID_PREFIX_RE = /^\d+_/
 
 function cleanCardText(value?: string): string | undefined {
@@ -140,21 +140,21 @@ function cleanCardText(value?: string): string | undefined {
   return cleaned || undefined
 }
 
-/** CTA 枚举 → 中文文案（未知值原样保留） */
+/** CTA enum → English label (unknown values are kept as-is) */
 const CTA_LABELS: Record<string, string> = {
-  learn_more: '了解更多',
-  visit: '访问',
-  shop_now: '立即购买',
-  book_now: '立即预订',
-  sign_up: '注册',
-  download: '下载',
-  install: '安装',
-  watch: '观看',
-  listen: '收听',
-  get_offer: '获取优惠',
-  order_now: '立即下单',
-  shop: '去购物',
-  play: '开始游戏',
+  learn_more: 'Learn more',
+  visit: 'Visit',
+  shop_now: 'Shop now',
+  book_now: 'Book now',
+  sign_up: 'Sign up',
+  download: 'Download',
+  install: 'Install',
+  watch: 'Watch',
+  listen: 'Listen',
+  get_offer: 'Get offer',
+  order_now: 'Order now',
+  shop: 'Shop',
+  play: 'Play',
 }
 
 function mapCtaLabel(raw?: string): string | undefined {
@@ -171,7 +171,7 @@ function rgbToHex(rgb?: {
   green?: number
   blue?: number
 }): string | undefined {
-  // 官方 mediaColor 用 red/green/blue，部分缓存用 r/g/b
+  // The official mediaColor uses red/green/blue, some caches use r/g/b
   const r = rgb?.r ?? rgb?.red
   const g = rgb?.g ?? rgb?.green
   const b = rgb?.b ?? rgb?.blue
@@ -182,7 +182,7 @@ function rgbToHex(rgb?: {
     .join('')}`
 }
 
-/** 单个 media_list 项 / media 组件项 → 轮播图（缺失实体时返回 null） */
+/** A single media_list item / media component item → carousel image (null when the entity is missing) */
 function toCardImage(
   item: any,
   entities: Record<string, any>,
@@ -210,7 +210,7 @@ function toCardImage(
     ? rgbToHex(palette[0].rgb)
     : undefined
 
-  // 视频：media_url_https 是封面；播放源保留给下游（下载/未来播放器），UI 暂不渲染
+  // Video: media_url_https is the poster frame; the playback sources are kept for downstream (downloads / a future player), the UI does not render them yet
   const isVideo = entity.type === 'video' || entity.type === 'animated_gif'
   const variants = Array.isArray(entity.video_info?.variants)
     ? entity.video_info.variants
@@ -258,9 +258,9 @@ function toCardImage(
 }
 
 /**
- * 按 `components` 声明顺序（缺失时按对象键顺序）遍历媒体组件：
- * - 多图：`swipeable_media.data.media_list`（顺序必须按 media_list，不能依赖对象键顺序）
- * - 单图：`media_1.data.{id,destination}` / `media_id` / 内联 `media`（`image_website`）
+ * Walks the media components in the order declared by `components` (falling back to object key order when absent):
+ * - multiple images: `swipeable_media.data.media_list` (the order must follow media_list, not object key order)
+ * - single image: `media_1.data.{id,destination}` / `media_id` / inline `media` (`image_website`)
  */
 function mapCardMedia(data: any): CardCarouselImage[] {
   const components = data.component_objects || {}
@@ -289,7 +289,7 @@ function mapCardMedia(data: any): CardCarouselImage[] {
       continue
     }
 
-    // 单媒体组件：media_1 / media_with_details_horizontal 的 media_id
+    // Single media component: media_1 / the media_id of media_with_details_horizontal
     const singleItem = compData.media
       ?? (compData.id || compData.media_id
         ? { ...compData, id: compData.id ?? compData.media_id }
@@ -305,17 +305,18 @@ function mapCardMedia(data: any): CardCarouselImage[] {
 }
 
 /**
- * 辅助函数：解析 Unified Card (YouTube / Trending / 单图 / 多图轮播等) 的复杂 JSON
+ * Helper: parses the complex JSON of a Unified Card (YouTube / Trending / single image / multi-image carousel, etc.)
  *
- * 兼容的组件布局：
- * - `details` 布局（YouTube 等）：`component_objects.details_1.data.{title,subtitle}`
- * - `media_with_details_horizontal` 布局（X 站内 Trending/topic 卡）：
+ * Supported component layouts:
+ * - `details` layout (YouTube, etc.): `component_objects.details_1.data.{title,subtitle}`
+ * - `media_with_details_horizontal` layout (in-X Trending/topic cards):
  *   `component_objects.media_with_details_horizontal_1.data.topic_detail.{title,subtitle}`
- * - `image_carousel_website` 布局（广告多图卡）：`swipeable_media.data.media_list`
- * - `image_website` 布局（广告单图卡）：`media_1.data.{id,destination}`
+ * - `image_carousel_website` layout (multi-image ad cards): `swipeable_media.data.media_list`
+ * - `image_website` layout (single-image ad cards): `media_1.data.{id,destination}`
  *
- * 标题/描述遍历所有组件提取；域名优先取 destination 的 `url_data.vanity`
- * （真实 X 卡片均带），老 `details` 布局无 vanity 时回退 subtitle。
+ * Title/description are extracted by walking every component; the domain prefers the
+ * destination's `url_data.vanity` (all real X cards carry it), falling back to the
+ * subtitle for the old `details` layout when there is no vanity.
  */
 interface ParsedUnifiedCard {
   title?: string
@@ -337,9 +338,9 @@ function parseUnifiedCard(jsonStr: string | undefined): ParsedUnifiedCard | null
 
     let title: string | undefined
     let description: string | undefined
-    let subtitle: string | undefined // details 布局的 subtitle 在老行为中充当 domain
+    let subtitle: string | undefined // the details layout's subtitle acts as the domain in the old behavior
 
-    // 遍历所有组件，兼容 details / media_with_details_horizontal 等多种布局
+    // Walk every component, supporting details / media_with_details_horizontal and other layouts
     for (const component of Object.values(data.component_objects || {})) {
       const compData = (component as any)?.data
       if (!compData)
@@ -350,7 +351,7 @@ function parseUnifiedCard(jsonStr: string | undefined): ParsedUnifiedCard | null
       subtitle ??= cleanCardText(compData.subtitle?.content)
     }
 
-    // 目标 URL 与域名：优先取 browser destination 的 url_data
+    // Target URL and domain: prefer the browser destination's url_data
     const destinations = Object.values(data.destination_objects || {}) as any[]
     const browser = destinations.find(d => d?.type === 'browser') ?? destinations[0]
     const urlData = browser?.data?.url_data
@@ -365,7 +366,7 @@ function parseUnifiedCard(jsonStr: string | undefined): ParsedUnifiedCard | null
       ? data.type
       : ''
     const isCarousel = cardType.startsWith('image_carousel')
-    // image_* → 图片卡（单图按原图比例 / 多图轮播）；video_* → 视频卡
+    // image_* → image card (single image at the original aspect ratio / multi-image carousel); video_* → video card
     const layout = isCarousel
       ? 'image_carousel' as const
       : cardType.startsWith('video_')
@@ -389,10 +390,10 @@ function parseUnifiedCard(jsonStr: string | undefined): ParsedUnifiedCard | null
     return {
       title,
       description,
-      // 域名优先取 url_data.vanity；老 details 布局回退 subtitle
+      // Domain prefers url_data.vanity; fall back to subtitle for the old details layout
       domain: urlData?.vanity ?? subtitle,
       url: urlData?.url,
-      // 首图与轮播首帧保持一致，而非 media_entities 的对象首键
+      // The primary image matches the carousel's first frame, not the first object key of media_entities
       imageUrl: images[0]?.url ?? legacyMedia?.media_url_https,
       layout,
       ...(images.length
@@ -419,7 +420,7 @@ export function mapTwitterCard(
   if (!cardData)
     return undefined
 
-  // 数据归一化：无论是新旧结构，都提取出核心的 name 和 binding_values
+  // Data normalization: pull out the core name and binding_values regardless of the old or new shape
   const legacy = cardData.legacy || cardData
   const name = legacy.name
   const bindingValues = legacy.binding_values
@@ -427,29 +428,29 @@ export function mapTwitterCard(
   if (!name || !Array.isArray(bindingValues))
     return undefined
 
-  // 2. 将 binding_values 转为 Map 以便快速查找 (O(1))
+  // 2. Turn binding_values into a Map for fast lookups (O(1))
   const bindings = new Map(bindingValues.map((v: any) => [v.key, v.value]))
 
-  // 3. 基础字段提取
+  // 3. Basic field extraction
   let card: LinkPreviewCard = {
     type: name === 'player'
       ? 'summary_large_image'
-      : name, // Player 统一视为大图卡片
+      : name, // Player cards are uniformly treated as large image cards
     url: legacy.url || getStr(bindings, 'card_url') || '',
     title: getStr(bindings, 'title') ?? '',
     description: getStr(bindings, 'description') ?? '',
-    // 域名优先取官方展示用的 vanity_url（youtube.com），domain 会带 www 前缀
+    // Domain prefers the vanity_url used for official display (youtube.com); domain carries a www prefix
     domain: getStr(bindings, 'vanity_url') || getStr(bindings, 'domain') || '',
     imageUrl: getBestImage(bindings) ?? '',
-    // 布局标记：非 unified_card 直接视为普通卡；旧缓存无此字段用于触发回填
+    // Layout marker: anything that is not unified_card is treated as a plain card; old caches lack this field, which triggers a backfill
     layout: 'default',
   }
 
-  // 4. 特殊处理 Unified Card (覆盖之前的提取)
+  // 4. Special handling for Unified Card (overrides the extraction above)
   if (name === 'unified_card') {
     const unifiedData = parseUnifiedCard(getStr(bindings, 'unified_card'))
     if (unifiedData) {
-      // 只覆盖非 undefined 字段，避免 description 等被 undefined 清空
+      // Only override fields that are not undefined, so description and friends are not wiped by undefined
       card = {
         ...card,
         ...Object.fromEntries(Object.entries(unifiedData).filter(([, v]) => v !== undefined)),
@@ -457,11 +458,11 @@ export function mapTwitterCard(
     }
   }
 
-  // 4.5 jetfuel 增强：解析 responsive_web_jetfuel_frame 附件数据（Trending/topic 卡全量）
+  // 4.5 jetfuel enhancement: parse the responsive_web_jetfuel_frame attachment data (full data for Trending/topic cards)
   if (jetfuelAttachment?.payload) {
     const trending = parseTrendingCard(jetfuelAttachment.payload)
     if (trending) {
-      // 优先使用 jetfuel 数据（官方渲染同源，含更新版描述/图片 + 分类/头像/posts 数）
+      // Prefer the jetfuel data (the same source the official renderer uses; it carries fresher descriptions/images plus category/avatars/posts count)
       card = {
         ...card,
         url: trending.url || card.url,
@@ -474,7 +475,7 @@ export function mapTwitterCard(
       }
     }
     else {
-      // 解析失败：回退 unified_card 结果，并提示开发者 payload 结构已变更
+      // Parse failure: fall back to the unified_card result and tell the developer the payload structure has changed
       logger?.warn?.('jetfuel.parse.fallback', {
         card: name,
         payloadHash: hashPayload(jetfuelAttachment.payload),
@@ -483,13 +484,13 @@ export function mapTwitterCard(
     }
   }
 
-  // 5. 最终校验与清洗
-  // 必须至少有 标题 或 描述 或 图片
+  // 5. Final validation and cleanup
+  // There must be at least a title or a description or an image
   if (!card.title && !card.description && !card.imageUrl) {
     return undefined
   }
 
-  // 域名兜底逻辑
+  // Domain fallback logic
   if (!card.domain && card.url) {
     try {
       card.domain = new URL(card.url).hostname
@@ -500,7 +501,7 @@ export function mapTwitterCard(
   return card
 }
 
-/** 轻量 payload 指纹（前 8B base64），用于日志中标识结构版本 */
+/** Lightweight payload fingerprint (first 8B of base64), used to identify the structure version in logs */
 function hashPayload(payload: string): string {
   const head = base64ToBytes(payload.slice(0, 12))
   return Array.from(head.subarray(0, 8)).map(x => x.toString(16).padStart(2, '0')).join('')
@@ -577,7 +578,7 @@ export function mapMediaDetails(tweet: RawTweet): MediaDetails[] | undefined {
       }
     }
 
-    // Fallback: 默认返回 photo 类型以保证类型安全
+    // Fallback: return the photo type by default to stay type-safe
     return {
       ...baseMedia,
       type: 'photo' as const,

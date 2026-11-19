@@ -1,24 +1,30 @@
 # NOTICE
 
-`@chilfish/tweet` 是以下项目的派生作品，保留其原始版权与许可声明。
+`@chilfish/tweet` is derived from the following projects. Their original
+copyright and license notices are retained here.
 
 ## Rettiwt-API
 
-- 来源：https://github.com/Rishikant181/Rettiwt-API
-- 版本基线：6.2.0
-- 许可证：MIT
-- 版权：Copyright (c) Rishikant Sahu
+- Source: https://github.com/Rishikant181/Rettiwt-API
+- Baseline version: 6.2.0
+- License: MIT
+- Copyright: Copyright (c) Rishikant Sahu
 
-派生范围：`src/lib/collections/`、`enums/`、`models/`、`requests/`、`services/`，以及由上游解析逻辑演化的 `parsers/` 部分。
+Derived scope: `src/lib/collections/`, `src/lib/enums/`, `src/lib/models/`,
+`src/lib/requests/`, `src/lib/services/`, and the `src/lib/parse/` modules that
+evolved from the upstream parsing logic.
 
 ## react-tweet
 
-- 来源：https://github.com/vercel/react-tweet
-- 许可证：MIT
-- 版权：Copyright (c) 2023 Luis Alvarez
+- Source: https://github.com/vercel/react-tweet
+- License: MIT
+- Copyright: Copyright (c) 2023 Luis Alvarez
 
-派生范围：`src/react/` 中的展示组件与解析工具（Phase 3）。
+Derived scope: the display components and parsing utilities planned for
+`src/react/` (Phase 3).
 
-## 说明
+## Notes
 
-两个上游项目均以 MIT 许可发布。本包统一以 MIT 发布，`LICENSE.md` 为项目自身版权声明；上游声明保留在本文件中。
+Both upstream projects are published under the MIT license. This package is also
+published under MIT; `LICENSE.md` holds this project's own copyright notice, while
+the upstream notices are retained in this file.

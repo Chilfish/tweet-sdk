@@ -15,17 +15,17 @@ const sortAliases: Record<string, TweetRepliesSortType> = {
 export const tweetGet = defineCommand({
   meta: {
     name: 'get',
-    description: '获取单条推文并富化（引用推文、卡片、投票、文章、媒体）',
+    description: 'Fetch a single tweet and enrich it (quoted tweet, card, poll, article, media)',
   },
   args: {
     id: {
       type: 'positional',
-      description: '推文 ID',
+      description: 'Tweet ID',
       required: true,
     },
     raw: {
       type: 'boolean',
-      description: '输出上游原始响应（不富化；markdown 回退为 JSON）',
+      description: 'Output the raw upstream response (no enrichment; markdown falls back to JSON)',
     },
     ...outputFormatArg,
     ...clientArg,
@@ -45,7 +45,7 @@ export const tweetGet = defineCommand({
     const tweet = enrich(raw)
     if (!tweet) {
       print(raw, {
-        markdown: () => `Tweet ${args.id} 不可用（tombstone 或结构变更）`,
+        markdown: () => `Tweet ${args.id} is unavailable (tombstone or schema change)`,
       })
       return
     }
@@ -57,25 +57,25 @@ export const tweetGet = defineCommand({
 export const tweetReplies = defineCommand({
   meta: {
     name: 'replies',
-    description: '获取推文回复（含主推文与下一页 cursor）',
+    description: 'Fetch tweet replies (includes the root tweet and the next-page cursor)',
   },
   args: {
     id: {
       type: 'positional',
-      description: '推文 ID',
+      description: 'Tweet ID',
       required: true,
     },
     cursor: {
       type: 'string',
-      description: '翻页 cursor（上一页返回的 nextCursor）',
+      description: 'Pagination cursor (the nextCursor returned by the previous page)',
     },
     count: {
       type: 'string',
-      description: '每页数量（X 上限约 20）',
+      description: 'Items per page (X caps it at about 20)',
     },
     sort: {
       type: 'string',
-      description: '排序：likes（默认）/ latest / relevance',
+      description: 'Sort order: likes (default) / latest / relevance',
     },
     ...outputFormatArg,
     ...clientArg,
@@ -104,25 +104,25 @@ export const tweetReplies = defineCommand({
 export const tweetSearch = defineCommand({
   meta: {
     name: 'search',
-    description: '搜索推文（支持 from: / since: / min_faves: 等 X 高级语法）',
+    description: 'Search tweets (supports X advanced operators such as from: / since: / min_faves:)',
   },
   args: {
     query: {
       type: 'positional',
-      description: '搜索关键词或查询表达式',
+      description: 'Search keyword or query expression',
       required: true,
     },
     type: {
       type: 'string',
-      description: '结果类型：top / latest（默认 latest）',
+      description: 'Result type: top / latest (default latest)',
     },
     count: {
       type: 'string',
-      description: '每页数量（SearchTimeline 上限约 20）',
+      description: 'Items per page (SearchTimeline caps it at about 20)',
     },
     cursor: {
       type: 'string',
-      description: '翻页 cursor（上一页返回的 nextCursor）',
+      description: 'Pagination cursor (the nextCursor returned by the previous page)',
     },
     ...outputFormatArg,
     ...clientArg,

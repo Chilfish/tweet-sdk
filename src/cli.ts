@@ -1,8 +1,8 @@
 /**
- * CLI 命令树。
+ * CLI command tree.
  *
- * `./cli` 子路径导出的就是这个模块；`src/cli-bin.ts` 是实际的 bin 入口
- * （负责 Node 版本检查、未知参数校验与错误信封）。
+ * This module is what the `./cli` subpath export resolves to; `src/cli-bin.ts` is the actual bin entry
+ * (it handles the Node version check, unknown flag validation, and the error envelope).
  */
 import { defineCommand } from 'citty'
 import pkg from '../package.json' with { type: 'json' }
@@ -17,13 +17,13 @@ export const main = defineCommand({
     name: 'tweet-cli',
     version: pkg.version,
     description:
-      'X（Twitter）取数与推文富化命令行\n\n'
-      + '认证：--keys <base64 cookie 列表> / --cookie <原始 Cookie> / .env 的 TWEET_KEYS\n'
-      + '输出：默认 JSON，加 --format markdown（-f md）给人读；错误走 stderr 的 JSON 信封',
+      'Fetch and enrich X (Twitter) data from the command line\n\n'
+      + 'Auth: --keys <base64 cookie list> / --cookie <raw Cookie> / TWEET_KEYS from .env\n'
+      + 'Output: JSON by default; add --format markdown (-f md) for human-readable output; errors go to a JSON envelope on stderr',
   },
   subCommands: {
     tweet: defineCommand({
-      meta: { name: 'tweet', description: '推文：获取 / 回复 / 搜索' },
+      meta: { name: 'tweet', description: 'Tweets: get / replies / search' },
       subCommands: {
         get: tweetGet,
         replies: tweetReplies,
@@ -31,28 +31,28 @@ export const main = defineCommand({
       },
     }),
     user: defineCommand({
-      meta: { name: 'user', description: '用户：资料 / 时间线' },
+      meta: { name: 'user', description: 'Users: profile / timeline' },
       subCommands: {
         get: userGet,
         timeline: userTimeline,
       },
     }),
     space: defineCommand({
-      meta: { name: 'space', description: 'Space 元数据' },
+      meta: { name: 'space', description: 'Space metadata' },
       subCommands: { get: spaceGet },
     }),
     list: defineCommand({
-      meta: { name: 'list', description: '列表' },
+      meta: { name: 'list', description: 'Lists' },
       subCommands: { tweets: listTweets },
     }),
     media: defineCommand({
-      meta: { name: 'media', description: '媒体下载' },
+      meta: { name: 'media', description: 'Media downloads' },
       subCommands: { download: mediaDownload },
     }),
   },
 })
 
-/** 递归包装所有命令的 run：未捕获错误统一输出 JSON 错误信封。 */
+/** Recursively wrap every command's `run`: uncaught errors are emitted as a JSON error envelope. */
 export function withErrorEnvelope<
   T extends {
     run?: (...args: any[]) => any

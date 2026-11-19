@@ -1,2 +1,2 @@
-# Shell 脚本必须保持 LF：CRLF 会让 bash 报 `$'\r': command not found`
+# Shell scripts must keep LF: CRLF makes bash fail with `$'\r': command not found`
 *.sh text eol=lf
