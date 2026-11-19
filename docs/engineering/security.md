@@ -26,10 +26,12 @@
 
 ## 代码边界
 
-- 运行时零依赖、无 `node:*` 导入，减少攻击面。
+- 运行时依赖收敛在 `linkedom`、`x-client-transaction-id`（core）与 `undici`（`./node`，懒加载）。
+- core 无运行时 `node:*` 导入；平台能力只经 `./node` 或注入实现进入。
 - 外部输入在边界校验；内部调用信任类型系统。
 - 禁止在库代码中执行 `eval` / `new Function`。
 - 不使用动态 `require`。
+- 日志（`RettiwtPoolLogger` / `ParseLogger`）只接收尾部摘要，不记录完整 apiKey / cookie。
 
 ## 漏洞响应
 

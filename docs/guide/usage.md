@@ -19,14 +19,16 @@
 ## 写代码
 
 ```bash
-# 新增一个模块
-src/utils/id-codec.ts
-tests/unit/utils/id-codec.test.ts
+# 新增一个解析模块
+src/lib/parse/example.ts
+tests/parse/example.test.ts
 ```
 
-- 内部模块按 `src/<domain>/` 组织，`src/index.ts` 只做 re-export。
+- core 模块放 `src/lib/`，Node 能力放 `src/node/`；`src/index.ts` / `src/node.ts` 只做 re-export。
+- 解析模块保持纯函数：不访问网络、不读文件，上游数据由调用方注入。
 - 类型导入使用 `import type`。
-- 新增导出要同步 `tests/exports.test.ts` 与 CHANGELOG。
+- 新增导出要同步 `tests/exports.test.ts`、[api.md](../reference/api.md) 与 CHANGELOG。
+- 新增子路径入口要同步 `tsdown.config.ts#entry` 与 `package.json#exports`。
 
 ## 提交
 
@@ -57,3 +59,5 @@ bun run release
 | `check-docs` 报未登记 | 在 `docs/README.md` 索引中补一行 |
 | 发布 job 报版本不一致 | tag 与 `package.json#version` 不同，重打 tag |
 | 产物缺少文件 | 先 `bun run build`，再 `bun run verify:package` |
+| `./node` 解析不到 `node.d.ts` | 构建产物缺失，重新 `bun run build` 并确认 `entry` 含 `src/node.ts` |
+| core 构建出现 `node:` 导入 | 平台能力被放进了 core，移到 `src/node/` 或改为注入 |

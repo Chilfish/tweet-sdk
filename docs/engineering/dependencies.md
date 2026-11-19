@@ -2,7 +2,7 @@
 
 ## 原则
 
-- **零运行时依赖**：`dependencies` 必须为空。新增运行时依赖需要在 PR 中说明必要性、体积与替代方案。
+- **运行时依赖要少且可解释**：新增运行时依赖必须在 PR 中说明必要性、体积、平台归属与替代方案。
 - **工具链进 devDependencies**：构建、测试、lint、发布脚本全部视为开发依赖。
 - **版本用 caret**：`^x.y.z`，锁定交给 `bun.lock`。
 - **不手工编辑锁文件**。
@@ -11,9 +11,12 @@
 
 | 类别 | 位置 | 示例 |
 |---|---|---|
-| 运行时 | `dependencies` | 无 |
+| 运行时（core，平台无关） | `dependencies` | `linkedom`、`x-client-transaction-id` |
+| 运行时（仅 `./node`） | `dependencies` | `undici`（懒加载） |
 | 开发工具 | `devDependencies` | tsdown、vitest、eslint |
 | 类型 | `devDependencies` | `@types/node`、`@types/bun` |
+
+运行时依赖的归属必须写清：只能由 `./node` 触达的依赖不得在 core 运行时导入，否则会破坏 `platform: 'neutral'`。
 
 ## 升级流程
 
@@ -33,9 +36,10 @@ git diff bun.lock
 - [ ] 是否真的需要？能否用标准库或现有依赖实现？
 - [ ] 许可证与项目兼容（MIT）？
 - [ ] 是否支持 ESM？是否需要 CJS 产物？
-- [ ] 是否引入 Node 内置模块？会破坏 `platform: 'neutral'`。
+- [ ] 是否引入 Node 内置模块？会破坏 `platform: 'neutral'`，只能放在 `./node`。
+- [ ] 是否已加入 `neverBundle`，避免被打进构建产物？
 - [ ] 是否显著增大安装体积？
-- [ ] 是否已加入 `devDependencies` 并更新 `bun.lock`？
+- [ ] 是否已加入 `dependencies` / `devDependencies` 并更新 `bun.lock`？
 
 ## 自动升级
 
