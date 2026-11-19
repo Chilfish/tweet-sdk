@@ -59,6 +59,20 @@ After the build, CI verifies that the entry files exist and imports them under N
    - `npm publish --provenance --access public`
 4. After publishing, create the GitHub Release (the same CHANGELOG section can serve as the notes).
 
+### First release (bootstrap)
+
+Trusted Publisher can only be configured after the npm package exists, so the very
+first release is manual:
+
+1. Push the tag; `publish.yml` runs but its `publish` job is **skipped** because the
+   repository variable `NPM_OIDC_READY` is unset.
+2. From a clean checkout of the tag, run `npm publish --access public` (and
+   `--provenance` when publishing from CI with a local `NPM_TOKEN`, if you prefer).
+3. In the npm package settings, bind this repository + `publish.yml` as the Trusted
+   Publisher.
+4. Set the repository variable `NPM_OIDC_READY=true` (Settings → Secrets and
+   variables → Actions → Variables). From then on tag pushes publish via OIDC.
+
 ## Authentication
 
 Use **npm Trusted Publisher (OIDC)** and do not configure `NPM_TOKEN`:
@@ -66,10 +80,12 @@ Use **npm Trusted Publisher (OIDC)** and do not configure `NPM_TOKEN`:
 - The workflow needs `permissions.id-token: write`.
 - `setup-node` deliberately **does not** set `registry-url`, to avoid writing an `.npmrc` with a placeholder token.
 - Before the first release, bind this repository and this workflow in the npm package settings.
+- The `publish` job is gated by `if: vars.NPM_OIDC_READY == 'true'`; leave the
+  variable unset until bootstrap is done, so a tag push never publishes by accident.
 
 ## Forbidden
 
-- Running `npm publish` directly locally (bypasses the gates).
+- Running `npm publish` directly locally after OIDC is enabled (bypasses the gates). The first bootstrap publish is the documented exception.
 - Enabling `exports: true` in `tsdown.config.ts` (it would rewrite the hand-maintained exports).
 - Publishing without updating CHANGELOG (CI fails immediately).
 - Introducing runtime `node:*` imports in core (breaks `platform: 'neutral'`).

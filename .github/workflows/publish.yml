@@ -15,6 +15,11 @@ concurrency:
 
 jobs:
   publish:
+    # OIDC publishing stays disabled until the npm package exists and its Trusted
+    # Publisher is configured. Enable it by setting the repository variable
+    # NPM_OIDC_READY=true; until then a tag push only runs CI, and publishing is
+    # done manually from the maintainer's machine.
+    if: vars.NPM_OIDC_READY == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

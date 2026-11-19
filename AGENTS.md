@@ -9,7 +9,7 @@ Repository-level hard constraints. See [docs/README.md](./docs/README.md) for de
 - Tests: **Vitest**, v8 coverage
 - Style: **@antfu/eslint-config** (with formatters), no Prettier
 - Git hooks: **lefthook** (`lefthook.yml`)
-- Release: a tag triggers GitHub Actions, npm OIDC + provenance
+- Release: a tag triggers GitHub Actions; npm publishing is gated by the `NPM_OIDC_READY` repository variable (OIDC + provenance)
 
 ## Language
 

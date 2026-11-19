@@ -38,7 +38,7 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) an
 - Added `NOTICE.md`, retaining the original copyright of Rettiwt-API (MIT, 6.2.0) and react-tweet (MIT).
 - Build tooling migrated from unbuild to tsdown, producing ESM + CJS dual format with standalone type declarations.
 - Package manager switched from pnpm to Bun, with `bun.lock` as the lockfile.
-- CI/release pipelines switched to action versions that actually exist; releases go through OIDC + provenance.
+- `CI/release`: the `publish` job now requires the repository variable `NPM_OIDC_READY=true`, so pushing a tag never publishes before the npm package and its Trusted Publisher exist; the first release is manual.
 - lefthook now owns Git hooks: pre-commit runs `eslint --fix` on staged files, pre-push builds.
 - Fixed `exports` conditional types, `engines`, `publishConfig`, and other metadata.
 - Tests moved to `tests/`, with export-surface contract tests and coverage configuration added.

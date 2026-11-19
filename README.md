@@ -137,6 +137,7 @@ scripts/                      # gate and release scripts
 1. Describe the changes for this release under `## Unreleased` in `CHANGELOG.md`.
 2. Run `bun run release`; `bumpp` bumps the version, commits, tags, and pushes.
 3. The pushed `v*` tag triggers `publish.yml`: it verifies the tag against `package.json`, the CHANGELOG version section, and the full gate, then runs `npm publish --provenance`.
+4. Until the npm package exists and its Trusted Publisher is configured, the `publish` job is skipped (repository variable `NPM_OIDC_READY` unset) and the first release is published manually; set `NPM_OIDC_READY=true` afterwards.
 
 See [docs/engineering/build-and-release.md](./docs/engineering/build-and-release.md) and the [release checklist](./docs/engineering/release-checklist.md) for details.
 

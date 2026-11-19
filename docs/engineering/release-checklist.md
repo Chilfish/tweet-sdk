@@ -30,9 +30,16 @@ bun run release
 
 - [ ] `bumpp` completes the version bump, commit and tag
 - [ ] The tag is pushed (`git push --follow-tags`)
-- [ ] GitHub Actions `Publish` succeeds
+- [ ] GitHub Actions `Publish` succeeds (or is skipped while `NPM_OIDC_READY` is unset)
 - [ ] `npm view <pkg>@<version>` resolves on npm
 - [ ] The GitHub Release is created with notes taken from the matching CHANGELOG section
+
+### First release only
+
+- [ ] Publish manually from the tag (`npm publish --access public`); the workflow's
+      `publish` job is skipped until `NPM_OIDC_READY` exists
+- [ ] Configure the npm Trusted Publisher for this repository + `publish.yml`
+- [ ] Create the repository variable `NPM_OIDC_READY=true`
 
 ## Rollback
 
