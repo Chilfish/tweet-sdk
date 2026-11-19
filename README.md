@@ -9,8 +9,9 @@
 ## Features
 
 - **Platform-agnostic core** — the transport layer is an injectable `HttpClient` that defaults to `fetch`; Workers / Deno / Bun / browsers / Node all share the same implementation.
-- **Single package, multiple entries** — `.` (core), `./node` (proxy and file upload), and `./react` (components, Phase 3) are independent of one another.
-- **Typed errors** — `TwitterApiError` / `RateLimitError` / `AuthError` / `NotFoundError`; the Pool reads `status` directly to classify them.
+- **Single package, multiple entries** — `.` (core), `./node` (proxy and file upload), `./cli`, `./internals` (unstable raw/extractor layer), and `./react` (components, Phase 3).
+- **Typed errors** — `TwitterApiError` / `RateLimitError` / `AuthError` / `NotFoundError` / `NotSupportedError` / `PoolExhaustedError`; the Pool reads `status` directly and preserves the real cause.
+- **Runtime-ready** — Workers and Bun smoke jobs run in CI; Bun supports a first-class `proxy` option, Node uses the undici dispatcher.
 - **Multi-key rotation pool** — per-key cooldown, exponential backoff, `inFlight` load balancing, injectable classifier and logger.
 - **Parsing as contract** — the `EnrichedTweet` produced by `enrichTweet` is the only contract between core and UI.
 - **Dual-format output** — ESM / CJS each ship their own type declarations, with `sideEffects: false`.
@@ -52,6 +53,36 @@ await client.run(fetcher => fetcher.request('MEDIA_UPLOAD_APPEND', {
 }))
 ```
 
+On Workers / Bun, build the client without environment access:
+
+```ts
+import { createClient, enrichTweet } from '@chilfish/tweet'
+
+const client = createClient({ keys: env.TWEET_KEYS.split(','), logger })
+const tweet = enrichTweet(await client.getTweet(id))
+```
+
+Bun proxying is a native first-class option; `createProxyFetch` from `./node` uses Bun's `fetch({ proxy })` and falls back to undici on Node. On Node, prefer `createNodeClient` / `createProxyFetch`, because the core factory does not import undici.
+
+```ts
+import { createClient } from '@chilfish/tweet'
+
+const client = createClient({
+  keys,
+  proxy: process.env.TWEET_PROXY,
+})
+```
+
+Low-level raw composition (including the `onFetchedresponse` hook) is a runtime export:
+
+```ts
+import { RettiwtPool, TwitterAPIClient } from '@chilfish/tweet'
+
+const api = new TwitterAPIClient(new RettiwtPool(keys, { proxy }))
+api.onFetchedresponse = async (key, data) => { /* archive raw payload */ }
+const { tweets, cursor } = await api.fetchUserTimelineWithRepliesRaw(userId)
+```
+
 ## Command line
 
 ```bash
@@ -86,10 +117,13 @@ See [docs/guide/cli.md](./docs/guide/cli.md) for details.
 | Entry | Contents | Runtime |
 |---|---|---|
 | `@chilfish/tweet` | transport / requests / auth / pool / parse / types | Platform-agnostic |
-| `@chilfish/tweet/node` | proxy dispatcher, `readMediaFile`, `createNodeClient` | Node 20+ |
+| `@chilfish/tweet/node` | proxy dispatcher, `readMediaFile`, `createNodeClient` | Node 20+ (Bun-aware proxy) |
 | `@chilfish/tweet/cli` | Embeddable citty command tree | Node 20+ |
+| `@chilfish/tweet/internals` | Raw types, `Extractors`, `Requests`, `TwitterAPIClient` | Platform-agnostic, **unstable** |
 | `tweet-cli` (bin) | Same as above, for `bunx` / `npx` / global install | Node 20+ |
 | `@chilfish/tweet/react` | Tweet display components (Phase 3, not released yet) | Browser |
+
+`./internals` has no SemVer guarantee; it exists so consumers migrating from an inlined Rettiwt-API copy can keep their fixture and parity tests. See [the migration guide](./docs/guide/migration.md).
 
 ## Commands
 
@@ -107,6 +141,8 @@ See [docs/guide/cli.md](./docs/guide/cli.md) for details.
 | `bun run cli` | Run the CLI locally (`bun src/cli-bin.ts`) |
 | `bun run example` | Run the examples |
 | `bun run verify:package` | Verify the published artifacts |
+| `bun run smoke:bun` | Bun runtime smoke (mock HTTP + native proxy) |
+| `bun run smoke:workers` | workerd runtime smoke through Miniflare |
 | `bun run release` | Bump the version, commit, tag, and push |
 
 ## Directory structure
@@ -145,6 +181,7 @@ See [docs/engineering/build-and-release.md](./docs/engineering/build-and-release
 
 - [docs/README.md](./docs/README.md) — documentation index and "when to read what"
 - [docs/reference/api.md](./docs/reference/api.md) — public API and export surface
+- [docs/guide/migration.md](./docs/guide/migration.md) — migrating from an inlined Rettiwt-API copy
 - [docs/engineering/architecture.md](./docs/engineering/architecture.md) — architecture and layering
 - [docs/reference/package-contract.md](./docs/reference/package-contract.md) — package.json contract
 - [docs/engineering/testing.md](./docs/engineering/testing.md) — testing conventions

@@ -4,6 +4,24 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) an
 
 ## Unreleased
 
+### Added
+
+- `./internals` subpath (unstable, no SemVer guarantee): raw response types, `Extractors`, `Requests`, `TweetRequests`, `SpaceRequests`, `FetchResourcesGroup`, `AllowGuestAuthenticationGroup`, `findByFilter`, `TweetFilter`, `UserDetails` and `TwitterAPIClient` for downstream migrations and parity tests.
+- `createClient` / `TwitterClientOptions` / `CreateClientOptions`: platform-neutral factory with no `process.env` access, plus explicit `keys` / `cookie` / `proxy` options.
+- `NotSupportedError` for resources that require a user credential, and `PoolExhaustedError` that preserves the real cause instead of fabricating 401.
+- Shared `Logger` contract (`RettiwtPoolLogger` / `ParseLogger` are aliases) and documented event fields; `pool.rotate` now emits `keySuffix`.
+- `RettiwtPoolOptions.proxy`: Bun uses the native `fetch` proxy option; Node keeps the undici dispatcher through `createProxyFetch`.
+- Bun and workerd (Miniflare) runtime smoke jobs in CI, including a dead-proxy assertion and a mock-HTTP path over the built package.
+
+### Fixed
+
+- `enrichTweet` now populates `parent_id`, `replyCount`, `likeCount`, `retweetCount` and `viewCount` (previously declared but always empty).
+- `mapTwitterCard` cleans zero-width title/description placeholders before the empty-card fallback.
+- `TwitterAPIClient` is now a runtime export (it was type-only while the docs listed it as a core export).
+- `getUser()` / the `User` model normalize the avatar size suffix (`_normal` and friends).
+- `RESOURCE_NOT_ALLOWED` and `BAD_AUTHENTICATION` are thrown as typed errors.
+- Pool exhaustion caused by a network/parse failure is no longer classified as 401.
+
 ## 0.1.1 — 2026-11-19
 
 ### Fixed

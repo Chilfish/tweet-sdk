@@ -17,6 +17,7 @@ Only the following changes require documentation up front; every other change ge
 | [guide/getting-started.md](./guide/getting-started.md) | Installation, initialization, first command | First time working with this project |
 | [guide/usage.md](./guide/usage.md) | Day-to-day development, releases, common operations | During day-to-day development |
 | [guide/cli.md](./guide/cli.md) | `tweet-cli` commands, output contract, authentication | When using the command line |
+| [guide/migration.md](./guide/migration.md) | Replacing an inlined Rettiwt-API copy, `./internals` imports, 0.1 field renames | When a downstream project adopts the package |
 
 ## Engineering standards
 

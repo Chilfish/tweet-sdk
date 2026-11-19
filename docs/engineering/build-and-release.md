@@ -6,9 +6,9 @@ Tool: **tsdown** (rolldown core). Configuration lives in `tsdown.config.ts`.
 
 | Item | Value | Rationale |
 |---|---|---|
-| `entry` | `src/index.ts`, `src/node.ts`, `src/cli.ts`, `src/cli-bin.ts` | multiple entries: core + Node adapter + CLI + bin |
+| `entry` | `src/index.ts`, `src/node.ts`, `src/cli.ts`, `src/cli-bin.ts`, `src/internals.ts` | multiple entries: core + Node adapter + CLI + bin + unstable internals |
 | `format` | `esm` + `cjs` | compatible with both `import` and `require` |
-| `dts` | `true` | generates `index.*` / `node.*` / `cli.*` type declarations |
+| `dts` | `true` | generates `index.*` / `node.*` / `cli.*` / `internals.*` type declarations |
 | `platform` | `neutral` | not bound to Node; `node:` appears only in `./node` / `./cli` |
 | `target` | `es2022` | modern syntax, avoids excessive downleveling |
 | `neverBundle` | `/^node:/`, `linkedom`, `x-client-transaction-id`, `undici` | runtime dependencies stay external |
@@ -31,15 +31,19 @@ dist/cli.cjs       CLI command tree CJS
 dist/cli.d.ts      CLI types
 dist/cli.d.cts     CLI CJS types
 dist/cli-bin.js    bin (with shebang; the build adds the executable bit automatically)
+dist/internals.js  unstable internals ESM
+dist/internals.cjs unstable internals CJS
+dist/internals.d.ts  unstable internals ESM types
+dist/internals.d.cts unstable internals CJS types
 ```
 
 Shared code is split into chunks such as `client-<hash>.js`, and each entry reuses the implementation through it; publishing only has to guarantee that the entry files above exist.
 
-After the build, CI verifies that the entry files exist and imports them under Node 20/22/24; `bun run verify:package` also checks the tarball file list to make sure source, tests and scripts do not end up in the published package.
+After the build, CI verifies that the entry files exist and imports them under Node 20/22/24; separate Bun and workerd (Miniflare) jobs import the built package and exercise the mock-HTTP path, including Bun's native proxy option. `bun run verify:package` also checks the tarball file list to make sure source, tests and scripts do not end up in the published package.
 
 ## package.json contract
 
-- `exports["."]`, `exports["./node"]` and `exports["./cli"]` must be conditional objects with their own `types` under `import` / `require`.
+- `exports["."]`, `exports["./node"]`, `exports["./cli"]` and `exports["./internals"]` must be conditional objects with their own `types` under `import` / `require`.
 - `bin` points to `./dist/cli-bin.js`, and `verify:package` checks that the target exists.
 - `files` contains only `dist`, `LICENSE.md`, `NOTICE.md`, `README.md`.
 - `sideEffects: false` guarantees tree-shaking.

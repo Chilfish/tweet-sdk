@@ -9,6 +9,7 @@ An SDK for X (Twitter) data extraction and tweet enrichment. The core is platfor
 ```
 src/index.ts            core public entry (barrel, re-exports only)
 src/node.ts             ./node public entry
+src/internals.ts        ./internals entry (unstable barrel over src/lib/**)
 src/lib/
   http/                 transport contract and fetch implementation (no platform dependencies)
   transaction.ts        x-client-transaction-id (injectable provider)
@@ -36,7 +37,8 @@ index.ts / node.ts  →  client / pool / parse  →  services  →  requests / c
 
 - The parse layer (`parse/`) does not depend on `services/` and performs no IO; upstream data is injected by the caller (e.g. `fetchSpace` for `attachSpaceDetails`).
 - `helpers` only keeps pure utilities (`JsonUtils`).
-- `src/index.ts` / `src/node.ts` are the only promised entry points; internal paths under `src/lib/**` are not public API.
+- `src/index.ts` / `src/node.ts` / `src/internals.ts` are the promised entry points; internal paths under `src/lib/**` are not public API.
+- `src/internals.ts` is deliberately unstable: it only re-exports raw types, collections and descriptors for downstream parity tests, with no SemVer guarantee.
 
 ## Public surface
 
@@ -57,7 +59,7 @@ interface HttpClient {
 
 - The default implementation uses the global `fetch`, with `AbortSignal.timeout` handling timeouts; the default timeout is 30s, and `0` disables it.
 - Request descriptors (`requests/*`) only describe `method` / `url` / `params` / `data` / `headers` and bind to no client.
-- Platform capabilities such as proxies, file reads and the `proxy dispatcher` appear only in `src/node/`.
+- File reads and the undici proxy dispatcher appear only in `src/node/`; `src/lib/http/proxy.ts` holds the Bun-native proxy branch and the shared scheme validation, so the core never imports undici (Workers reject unresolved `import('undici')` at build time).
 - The transaction id is injected through `TidProvider`: the default implementation fetches the X page shell, and restricted runtimes (e.g. ones that cannot parse HTML) can swap in a static implementation.
 
 ## Platform neutrality
@@ -74,6 +76,6 @@ The build target is `platform: 'neutral'` and does not inline Node built-in modu
 |---|---|
 | Add an endpoint | add a descriptor in `requests/<domain>.ts` → register it in `collections/Requests.ts` → add the resource in `enums/Resource.ts` → classify it in `collections/Groups.ts` |
 | Add a subpath entry | add `src/<name>.ts` and declare it in both the tsdown `entry` and `package.json#exports` |
-| Add a platform capability | put it in `src/node/` or a new subpath entry; core only accepts injection |
+| Add a platform capability | put it in `src/node/` or a new subpath entry; core only accepts injection (Bun-native proxy is the exception and lives in `src/lib/http/proxy.ts`) |
 | Add a runtime dependency | evaluate dual ESM/CJS output, tree-shaking, `sideEffects` and platform ownership at the same time |
 | Split into multiple packages | migrate to a workspace and centralize versions in a catalog |

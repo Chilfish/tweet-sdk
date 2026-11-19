@@ -30,6 +30,10 @@
     "import": { "types": "./dist/cli.d.ts", "default": "./dist/cli.js" },
     "require": { "types": "./dist/cli.d.cts", "default": "./dist/cli.cjs" }
   },
+  "./internals": {
+    "import": { "types": "./dist/internals.d.ts", "default": "./dist/internals.js" },
+    "require": { "types": "./dist/internals.d.cts", "default": "./dist/internals.cjs" }
+  },
   "./package.json": "./package.json"
 }
 ```
@@ -48,7 +52,8 @@ Rules:
 - Bare string exports (for example `".": "./dist/index.js"`) are not allowed.
 - Every target file must actually exist; `bun run verify:package` validates this (including the `bin` target).
 - New subpaths must be mirrored in `tests/exports.test.ts` and `tsdown.config.ts#entry`.
-- `./node` / `./cli` / `./cli-bin` are the entries allowed to import `node:*`; a failing core build counts as breaking `platform: 'neutral'`.
+- `./node` / `./cli` / `./cli-bin` are the entries allowed to import `node:*`; `./internals` and the core must stay platform-neutral. A failing core build counts as breaking `platform: 'neutral'`.
+- `./internals` is explicitly unstable and has no SemVer guarantee.
 
 ## Legacy top-level fields
 
@@ -70,7 +75,7 @@ Runtime dependencies are limited to the following three, and each must be either
 |---|---|---|
 | `linkedom` | Parse the X page shell to generate the transaction id | core (pure JS) |
 | `x-client-transaction-id` | `x-client-transaction-id` header computation | core (pure JS) |
-| `undici` | Proxy dispatcher for Node fetch (`ProxyAgent`) | lazily loaded by `./node` |
+| `undici` | Proxy dispatcher for Node fetch (`ProxyAgent`) | lazily loaded by `./node`; the core uses Bun's native `fetch` proxy option |
 
 - The whole toolchain lives in `devDependencies`, with caret versions.
 - Adding a runtime dependency requires justifying the need, the size and the alternatives, and updating this document.

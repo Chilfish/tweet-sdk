@@ -8,6 +8,10 @@ The pipeline is defined in `.github/workflows/ci.yml`.
 |---|---|---|
 | `check` | push to main / PR | typecheck, lint:check, test:coverage, build, artifact and docs validation, example run; uploads the `dist` and `coverage` artifacts |
 | `runtime` | push to main / PR | depends on `check`, downloads the `dist` artifact and verifies both ESM and CJS imports under Node 20/22/24 |
+| `runtime-bun` | push to main / PR | imports the built package on Bun, runs the mock-HTTP smoke and proves a dead proxy is rejected |
+| `runtime-workers` | push to main / PR | bundles the built package with `bun build` and runs the smoke inside workerd through Miniflare |
+
+The runtime smoke scripts live in `scripts/`: `smoke-runtime.mjs` (shared mock-HTTP assertions), `smoke-bun.mjs` and `smoke-workers.mjs` (Miniflare driver). They import `dist/`, so they run after the build artifact is available.
 
 ## Node versions
 
