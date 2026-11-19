@@ -10,6 +10,7 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) an
 
 - Manual `npm publish` no longer aborts with `EUSAGE` provenance errors: `publishConfig.provenance` was removed and the CI workflow passes `--provenance` explicitly.
 - The CI `runtime` job now installs production dependencies before importing `dist`, so externalized runtime deps (`linkedom`, `x-client-transaction-id`) resolve on every Node version.
+- `verify:package` accepts both the npm 11 array and npm 12 object shapes of `pack --json`; the publish workflow pins npm 11 for a stable publisher.
 
 ### Internal
 

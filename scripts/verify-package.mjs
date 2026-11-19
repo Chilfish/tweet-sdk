@@ -28,6 +28,21 @@ function collectTargets(value, targets = []) {
   return targets
 }
 
+/**
+ * `npm pack --json` returns an array on npm 11 and an object keyed by package
+ * name on npm 12. Accept both, and ignore any leading warning lines.
+ */
+function parsePackOutput(output) {
+  const start = output.search(/[[{]/)
+  if (start === -1)
+    return undefined
+
+  const parsed = JSON.parse(output.slice(start))
+  if (Array.isArray(parsed))
+    return parsed[0]
+  return Object.values(parsed)[0]
+}
+
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8'))
 
 for (const target of collectTargets(pkg.exports)) {
@@ -88,7 +103,9 @@ try {
         encoding: 'utf-8',
         stdio: ['ignore', 'pipe', 'pipe'],
       })
-  packInfo = JSON.parse(output)[0]
+  packInfo = parsePackOutput(output)
+  if (!packInfo?.files)
+    fail('could not parse the `npm pack --dry-run --json` output')
 }
 catch (error) {
   fail(`npm pack --dry-run failed: ${error.message}`)

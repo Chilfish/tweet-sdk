@@ -37,7 +37,9 @@ jobs:
           # placeholder token that actually interferes with OIDC.
 
       - name: Upgrade npm for Trusted Publisher
-        run: npm install -g npm@latest
+        # npm 11.5.2+ supports OIDC trusted publishing. Pin the major line: npm 12
+        # changed `pack --json` output, and a stable publisher is easier to audit.
+        run: npm install -g npm@11
 
       - run: bun install --frozen-lockfile
 
