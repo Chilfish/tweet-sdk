@@ -32,8 +32,9 @@ describe('assertKnownFlags', () => {
 
     expect(error).toBeInstanceOf(Error)
     expect((error as Error).message).toContain('Unknown option --raw for tweet-cli')
-    // 参数由子命令声明：上下文里给出「写到子命令之后」的修法
-    expect((error as { context?: Record<string, unknown> }).context?.next).toContain('写在子命令之后')
+    // The parameter is declared by the subcommand: the context carries the fix
+    // "write it after the subcommand"
+    expect((error as { context?: Record<string, unknown> }).context?.next).toContain('put --raw after the subcommand')
   })
 
   it('stops parsing at --', async () => {

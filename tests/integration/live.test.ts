@@ -4,16 +4,17 @@ import { enrichTweet } from '../../src/lib/parse/tweet'
 import { createNodeClient } from '../../src/node'
 
 /**
- * 真实上游集成用例。
+ * Integration cases against the real upstream.
  *
- * 默认跳过；提供 key 与样本 id 后运行：
+ * Skipped by default; run them after providing a key and sample ids:
  *
  * ```bash
  * TWEET_KEYS=<base64 cookie> TWEET_TEST_ID=<tweet-id> bun run test
- * # 可选：TWEET_TEST_SPACE_ID=<space-id> TWEET_TEST_USER=<username>
+ * # Optional: TWEET_TEST_SPACE_ID=<space-id> TWEET_TEST_USER=<username>
  * ```
  *
- * 断言只覆盖「契约形状」，不写死文案，避免上游内容变化导致无意义红灯。
+ * Assertions only cover the contract shape and never hard-code copy, so upstream
+ * content changes do not cause meaningless red builds.
  */
 const keys = (process.env.TWEET_KEYS ?? '').split(',').map(key => key.trim()).filter(Boolean)
 const tweetId = process.env.TWEET_TEST_ID

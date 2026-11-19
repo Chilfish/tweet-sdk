@@ -86,7 +86,7 @@ describe('mapTwitterCard · unified card media', () => {
       color: '#ffeb9d',
     })
     expect(card?.imageUrl).toBe('https://pbs.twimg.com/1.jpg')
-    expect(card?.ctaLabel).toBe('了解更多')
+    expect(card?.ctaLabel).toBe('Learn more')
     expect(card?.title).toBe('')
   })
 

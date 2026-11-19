@@ -15,12 +15,13 @@ import { SpaceRequests } from '../../src/lib/requests/Space'
 import { loadFixture } from '../helpers/load-fixture'
 
 /**
- * Space 卡片纯逻辑（无网络、无 React）+ 请求层接线。
+ * Space card pure logic (no network, no React) + request layer wiring.
  *
- * 样本全部为真实上游响应固化：推文 `1968314084207788302` 的 `card`（audiospace）、
- * Space `1yoKMPnjEbOxQ` 的 `AudioSpaceById` 响应，以及已删除 Space `1DGLdvzVZmLGm`
- * 的响应（只有 `is_subscribed`、无 metadata）。断言值对齐官方卡片实测文案
- * （`2,478 人がリスニング/リプレイ` / `9月17日` / `42:40`）。
+ * All fixtures are frozen real upstream responses: the `card` (audiospace) of tweet
+ * `1968314084207788302`, the `AudioSpaceById` response of Space `1yoKMPnjEbOxQ`, and the
+ * response of the deleted Space `1DGLdvzVZmLGm` (only `is_subscribed`, no metadata).
+ * Assertion values match the copy observed on the official card
+ * ("2,478 listening/replay" / "Sep 17" / "42:40").
  */
 
 const SPACE_ID = '1yoKMPnjEbOxQ'
@@ -30,7 +31,10 @@ const audioSpace = loadFixture<IAudioSpace>('space/audio-space-ended.json')
 const unavailableSpace = loadFixture<IAudioSpace>('space/audio-space-unavailable.json')
 const fixtureTweet = loadFixture<EnrichedTweet>('tweets/with-space-ja.json')
 
-/** 以真实 metadata 为底派生待测场次：只翻转被考察的字段，保留真实结构 */
+/**
+ * Derive the space under test from the real metadata: override only the field under
+ * examination and keep the rest of the real structure.
+ */
 function derived(over: Record<string, unknown>): Record<string, any> {
   return {
     metadata: {
@@ -68,7 +72,7 @@ describe('audiospace card detection', () => {
     expect(extractAudiospaceId({
       legacy: { name: 'summary_large_image', binding_values: [] },
     })).toBeNull()
-    // 名称像 audiospace 但没有 id binding / 没有 binding_values
+    // The name looks like audiospace but there is no id binding / no binding_values
     expect(extractAudiospaceId({
       legacy: {
         name: '3691233323:audiospace',
@@ -83,7 +87,7 @@ describe('audiospace card detection', () => {
     expect(extractAudiospaceId({
       legacy: { name: '3691233323:audiospace' },
     })).toBeNull()
-    // 也支持已是 legacy 层的直接传入（无 legacy 包裹）
+    // Also accepts a value that is already at the legacy level (no legacy wrapper)
     expect(extractAudiospaceId({
       name: '3691233323:audiospace',
       binding_values: [
@@ -104,18 +108,18 @@ describe('audioSpaceById metadata mapping', () => {
 
     expect(space!.id).toBe(SPACE_ID)
     expect(space!.url).toBe('https://x.com/i/spaces/1yoKMPnjEbOxQ')
-    // 标题含 CJK + emoji，未被截断
+    // The title contains CJK + emoji and is not truncated
     expect(space!.title).toBe('#ゆめみた合宿3日目！ついに最終日！✨コメントはハッシュタグにてお願いします✨')
     expect(space!.state).toBe('Ended')
     expect(space!.isReplayAvailable).toBe(true)
     expect(space!.availability).toBe('replayable')
 
-    // 官方卡片 42:40 = ended_at - started_at
+    // The official card shows 42:40 = ended_at - started_at
     expect(space!.startedAt).toBe(1758117620659)
     expect(space!.endedAt).toBe(1758120181605)
     expect(space!.durationMs).toBe(2560946)
 
-    // 官方卡片 2,478 人がリスニング/リプレイ = 直播收听 + 回放
+    // The official card's listener count = live listeners + replays
     expect(space!.liveListenersCount).toBe(1245)
     expect(space!.replayCount).toBe(1233)
     expect(space!.listenersCount).toBe(2478)
@@ -127,16 +131,17 @@ describe('audioSpaceById metadata mapping', () => {
   })
 
   it('fills verification from the tweet author when the host is the author', () => {
-    // AudioSpaceById 的 creator_results 是精简对象：不含 is_blue_verified / verified_type
+    // `creator_results` from AudioSpaceById is a slimmed-down object: no is_blue_verified / verified_type
     const creator = (audioSpace.metadata as any).creator_results.result
     expect(creator.is_blue_verified).toBeUndefined()
     expect(creator.legacy.verified_type).toBeUndefined()
 
-    // 推文作者对象更完整，同账号时补齐——否则官方卡片上的认证徽标会丢
+    // The tweet author object is more complete, so it fills in the gaps for the same account;
+    // otherwise the verified badge shown on the official card is lost
     expect(space!.host.is_blue_verified).toBe(true)
     expect(space!.host.verified_type).toBe('Business')
 
-    // 不同账号（非主播）不借用认证
+    // A different account (not the host) does not borrow the verification
     const other = mapSpaceDetails(SPACE_ID, audioSpace, {
       ...fixtureTweet.user,
       screen_name: 'someone_else',
@@ -150,38 +155,38 @@ describe('audioSpaceById metadata mapping', () => {
 
 describe('malformed metadata degrades without throwing', () => {
   it('drops the card only when the space id itself is unknown', () => {
-    // 没有 id 就无法构造任何 URL —— 唯一返回 null 的情形
+    // Without an id no URL can be built — the only case that returns null
     expect(mapSpaceDetails('', audioSpace)).toBeNull()
     expect(mapSpaceDetails('', undefined)).toBeNull()
   })
 
   it('degrades partial metadata instead of throwing', () => {
-    // 无标题：仍返回（标题空），不整块丢弃
+    // No title: still returned (with an empty title), not dropped as a whole
     const noTitle = mapSpaceDetails(SPACE_ID, derived({ title: '' }))
     expect(noTitle).not.toBeNull()
     expect(noTitle!.title).toBe('')
     expect(noTitle!.availability).toBe('replayable')
 
-    // 进行中场次（无 ended_at）→ 不抛错，时长缺失
+    // A running space (no ended_at) → no throw, duration is missing
     const live = mapSpaceDetails(SPACE_ID, derived({ state: 'Running', ended_at: undefined }))
     expect(live!.durationMs).toBeNull()
     expect(live!.state).toBe('Running')
 
-    // 缺 creator_results → 主播信息为空，但标题/人数仍在
+    // Missing creator_results → host info is empty, but the title and listener count remain
     const noCreator = mapSpaceDetails(SPACE_ID, derived({ creator_results: undefined }))
     expect(noCreator!.title).toContain('ゆめみた合宿3日目')
     expect(noCreator!.host.screen_name).toBe('')
     expect(noCreator!.host.name).toBe('')
     expect(noCreator!.listenersCount).toBe(2478)
 
-    // 人数缺失 → 归一为 0，不产生 NaN
+    // Listener counts missing → normalized to 0, no NaN
     const noCounts = mapSpaceDetails(SPACE_ID, derived({
       total_live_listeners: undefined,
       total_replay_watched: undefined,
     }))
     expect(noCounts!.listenersCount).toBe(0)
 
-    // 上游时间戳非法 → 时长缺失，不抛错
+    // Invalid upstream timestamp → duration is missing, no throw
     expect(mapSpaceDetails(SPACE_ID, derived({ ended_at: 'not-a-number' }))!.durationMs).toBeNull()
   })
 })
@@ -200,7 +205,8 @@ describe('request layer targets AudioSpaceById', () => {
 
   it('the resource is registered for fetching (wiring guard)', () => {
     expect(ResourceType.SPACE_DETAILS).toBe('SPACE_DETAILS')
-    // 未注册进 FetchResourcesGroup 会被 _validateArgs 判为无效资源，请求静默失败
+    // If the resource is not registered in FetchResourcesGroup, _validateArgs rejects it as
+    // invalid and the request fails silently
     expect(FetchResourcesGroup).toContain(ResourceType.SPACE_DETAILS)
     expect(Requests[ResourceType.SPACE_DETAILS]({ id: SPACE_ID }).url).toContain('AudioSpaceById')
   })
@@ -215,7 +221,7 @@ describe('deleted / inaccessible space becomes a tombstone', () => {
     expect(space).not.toBeNull()
     expect(space!.availability).toBe('unavailable')
     expect(space!.id).toBe('1DGLdvzVZmLGm')
-    // 墓碑仍需可跳转地址（由 card binding 的 id 构造，不依赖 metadata）
+    // A tombstone still needs a navigable URL (built from the card binding id, independent of metadata)
     expect(space!.url).toBe('https://x.com/i/spaces/1DGLdvzVZmLGm')
     expect(space!.title).toBe('')
     expect(space!.listenersCount).toBe(0)
@@ -231,7 +237,8 @@ describe('deleted / inaccessible space becomes a tombstone', () => {
     expect(mapSpaceDetails('1DGLdvzVZmLGm', {})!.availability).toBe('unavailable')
   })
 
-  // 回归：无卡片的 Space 推文过去会被整条漏掉 —— 只认 card binding 的 id
+  // Regression: Space tweets without a card used to be dropped entirely — only the card
+  // binding id was recognised as a space reference
   it('resolves the space id from the body link when there is no card', () => {
     const cardless = loadFixture<{
       card: unknown
@@ -239,23 +246,23 @@ describe('deleted / inaccessible space becomes a tombstone', () => {
     }>('space/audio-space-cardless-tweet.json')
 
     expect(cardless.card).toBeNull()
-    // 只有卡片时才有 id，此处为空
+    // An id only exists through the card, so it is empty here
     expect(extractAudiospaceId(cardless.card)).toBeNull()
 
     const entities = cardless.entities.map(e => ({ ...e, href: e.expanded_url }))
     expect(resolveSpaceId(cardless.card, entities)).toBe('1djGXroNWDExZ')
 
-    // 卡片优先于正文链接
+    // The card takes precedence over the body link
     expect(resolveSpaceId(card, entities)).toBe(SPACE_ID)
 
-    // 既无卡片也无 Space 链接 → null
+    // Neither a card nor a Space link → null
     expect(resolveSpaceId(null, [
       { href: 'https://example.com/a' },
     ])).toBeNull()
     expect(resolveSpaceId(null, [])).toBeNull()
     expect(resolveSpaceId(undefined, undefined)).toBeNull()
 
-    // 该 Space 同样已删除 → 墓碑态
+    // That space is deleted as well → tombstone state
     const space = mapSpaceDetails('1djGXroNWDExZ', unavailableSpace)
     expect(space!.availability).toBe('unavailable')
     expect(space!.url).toBe('https://x.com/i/spaces/1djGXroNWDExZ')
@@ -273,7 +280,8 @@ describe('deleted / inaccessible space becomes a tombstone', () => {
 describe('availability drives whether playback is offered', () => {
   it('only an ended space with replay enabled is replayable', () => {
     expect(mapSpaceDetails(SPACE_ID, audioSpace)!.availability).toBe('replayable')
-    // 已结束但主办方未开启回放 —— 没有录音可放，不得给播放入口
+    // Ended, but the host did not enable replay — there is no recording to play, so no
+    // playback entry point may be offered
     expect(mapSpaceDetails(SPACE_ID, derived({ is_space_available_for_replay: false }))!.availability)
       .toBe('no-replay')
     expect(mapSpaceDetails(SPACE_ID, derived({ state: 'TimedOut', is_space_available_for_replay: false }))!.availability)
@@ -283,13 +291,14 @@ describe('availability drives whether playback is offered', () => {
   it('classifies live and upcoming spaces', () => {
     expect(mapSpaceDetails(SPACE_ID, derived({ state: 'Running' }))!.availability).toBe('live')
     expect(mapSpaceDetails(SPACE_ID, derived({ state: 'NotStarted' }))!.availability).toBe('upcoming')
-    // 大小写不敏感（上游 state 大小写不保证）
+    // Case-insensitive (upstream casing of `state` is not guaranteed)
     expect(mapSpaceDetails(SPACE_ID, derived({ state: 'running' }))!.availability).toBe('live')
   })
 
   it('replay-disabled space still shows its metadata', () => {
     const noReplay = mapSpaceDetails(SPACE_ID, derived({ is_space_available_for_replay: false }))!
-    // 回放关闭只是「不能播」，元数据照常展示（官方卡片也仍列出人数/时长）
+    // Replay being off only means "cannot play"; the metadata is still shown, just like the
+    // official card which keeps listing the listener count and duration
     expect(noReplay.title).toContain('ゆめみた合宿3日目')
     expect(noReplay.listenersCount).toBe(2478)
     expect(noReplay.durationMs).toBe(2560946)
@@ -338,7 +347,7 @@ describe('attachSpaceDetails wires space onto enriched tweets', () => {
       rawTweet(null),
     ], fetchSpace)
 
-    // 两条推文指向同一个 Space → 只打一次上游
+    // Both tweets point at the same Space → the upstream is hit only once
     expect(fetchSpace).toHaveBeenCalledTimes(1)
     expect(fetchSpace).toHaveBeenCalledWith(SPACE_ID)
     expect(tweets[0]!.space).toMatchObject({ id: SPACE_ID })
