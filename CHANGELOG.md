@@ -4,6 +4,8 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) an
 
 ## Unreleased
 
+## 0.2.0 — 2026-11-19
+
 ### Added
 
 - `./internals` subpath (unstable, no SemVer guarantee): raw response types, `Extractors`, `Requests`, `TweetRequests`, `SpaceRequests`, `FetchResourcesGroup`, `AllowGuestAuthenticationGroup`, `findByFilter`, `TweetFilter`, `UserDetails` and `TwitterAPIClient` for downstream migrations and parity tests.
