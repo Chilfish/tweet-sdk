@@ -8,6 +8,7 @@ interface PackageManifest {
   files?: string[]
   engines?: Record<string, string>
   exports: Record<string, unknown>
+  bin?: Record<string, string>
 }
 
 const manifest: PackageManifest = JSON.parse(
@@ -43,5 +44,16 @@ describe('package manifest', () => {
       import: { types: './dist/node.d.ts', default: './dist/node.js' },
       require: { types: './dist/node.d.cts', default: './dist/node.cjs' },
     })
+  })
+
+  it('exposes the cli entry as a typed subpath', () => {
+    expect(manifest.exports['./cli']).toEqual({
+      import: { types: './dist/cli.d.ts', default: './dist/cli.js' },
+      require: { types: './dist/cli.d.cts', default: './dist/cli.cjs' },
+    })
+  })
+
+  it('ships a cli bin', () => {
+    expect(manifest.bin).toEqual({ 'tweet-cli': './dist/cli-bin.js' })
   })
 })
